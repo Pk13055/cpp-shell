@@ -11,10 +11,13 @@ class BaseDetails {
 	char user_name[USER_NAME_LENGTH];
 	char host_name[SYSTEM_NAME_LENGTH];
 	char pwd1[PWD_LENGTH];
-public:
-	BaseDetails();
-	void update();
+	char home_dir[PWD_LENGTH / 2];
+	void sub_home();
 	char* get_host();
 	char* get_user();
+public:
+	void print_term();
 	char* get_cwd();
+	BaseDetails();
+	void update();
 };
