@@ -9,13 +9,49 @@
 using namespace std;
 using namespace Color;
 
+void single_command(char cmd[])
+{
+	Modifier red(FG_RED);
+	Modifier def(FG_DEFAULT);
+
+	char* arg[100];
+
+	arg[0] = strtok(cmd," ");
+
+	for(int i=0;arg[i] != NULL;i++)
+		arg[i+1] = strtok(NULL," ");
+
+	int ic;
+	if((ic = execvp(arg[0],arg)) < 0) {
+		cout<<red<<"Error Occured "<<ic<<def<<endl;
+		exit(1);}
+
+}
+
+void execute_command(char cmd[]){
+
+	char* arg[100];
+
+	arg[0] = strtok(cmd,";");
+
+	for(int i=0; arg[i]!= NULL;i++)
+		arg[i+1] = strtok(NULL,";");	
+
+	for(int i=0;arg[i]!=NULL;i++)
+		{
+			int pid = fork();
+			if(pid == 0)
+				single_command(arg[i]);
+			else
+				wait(NULL);
+		}
+
+}
+
 signed main() {
 	BaseDetails b;
 	char *cmd = (char*) malloc(COMMAND_LENGTH);
-	Modifier red(FG_RED);
-	Modifier def(FG_DEFAULT);
 	
-
 	// main process execution loop
 	do {
 		
@@ -26,11 +62,11 @@ signed main() {
 		
 		// this creates a parent child fork and the new command is run on the child process
 		Process p;
-		cin.getline(cmd, COMMAND_LENGTH);
-		
+		// cin.getline(cmd, COMMAND_LENGTH);
+		fgets(cmd,COMMAND_LENGTH,stdin);
+		cmd = strtok(cmd,"\n");
 		// removing the leading and trailing spaces
 		strcpy(cmd, remove_padding(cmd));
-		
 		// exit shell on quit
 		if(!strcmp(cmd,"exit") || !strcmp(cmd,"quit"))
 			break;
@@ -45,17 +81,14 @@ signed main() {
 
 		// pid is 0 for the child process
 		if((pid = fork()) == 0) {
-			int ic;
 			
 			p.set_pid(pid);
 			p.set_name(cmd);
 			p.set_job(1);
 			all_proc[pid] = p;
 
-			if((ic = execlp(cmd, cmd, (char*) NULL)) < 0) {
-				cout<<red<<"Error Occured "<<ic<<def<<endl;
-				exit(1);
-			}
+			execute_command(cmd);
+			
 		}
 
 		// targets non-zero, ie, parent process

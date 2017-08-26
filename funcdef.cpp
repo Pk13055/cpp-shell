@@ -49,7 +49,7 @@ void  BaseDetails::sub_home() {
 		for(int i = act - repl; i < act; pwd1[i++] = '\0');
 	}
 	else if(is_same && strlen(pwd1) == strlen(homedir))
-		strcpy(pwd1, "~");
+			strcpy(pwd1, "~");
 
 }
 char* BaseDetails::get_user() { return user_name; }
@@ -77,21 +77,21 @@ char* remove_padding(char cmd[]) {
 	bool is_init = true, space_taken = false;
 	
 	for(int i = 0; i < strlen(cmd); i++) {
-		if(is_init && (cmd[i] == ' ' || cmd[i] == '\t'))
+		if(is_init && isspace(cmd[i]))
 			continue;
-		else if(is_init && !(cmd[i] == ' ' || cmd[i] == '\t')) {
+		else if(is_init && !isspace(cmd[i])) {
 			is_init = false;
 			sequence.push_back(cmd[i]);
 		}
-		else if(!is_init && !space_taken && (cmd[i] == ' ' || cmd[i] == '\t')) {
+		else if(!is_init && !space_taken && isspace(cmd[i])) {
 			space_taken = true;
 			sequence.push_back(' ');
 		}
-		else if(!is_init && space_taken && !(cmd[i] == ' ' || cmd[i] == '\t')) {
+		else if(!is_init && space_taken && !isspace(cmd[i])) {
 			sequence.push_back(cmd[i]);
 			space_taken = false;
 		}
-		else if(!is_init && !space_taken && !(cmd[i] == ' ' || cmd[i] == '\t')) {
+		else if(!is_init && !space_taken && !isspace(cmd[i])) {
 			sequence.push_back(cmd[i]);
 		}
 	}
