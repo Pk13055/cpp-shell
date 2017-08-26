@@ -33,20 +33,16 @@ void  BaseDetails::sub_home() {
 	const char *homedir;
 	if ((homedir = getenv("HOME")) == NULL) 
 		homedir = getpwuid(getuid())->pw_dir;
-	bool is_same = true;
-	for(int i = 0; i < strlen(homedir); i++) {
-		if(pwd1[i] != homedir[i]) {
-			is_same = false;
-			break;
-		}
-	}
+	bool is_same = (strlen(pwd1) >= strlen(homedir)) && 
+		(!strncmp(pwd1, homedir, strlen(homedir)));
+	
 	if(is_same && strlen(pwd1) > strlen(homedir)) {
     	// - 1 because of ~ repr
-		int repl = strlen(homedir) - 1;
-		for(int i = 1; i < strlen(pwd1) - repl; i++) 
-			pwd1[i] = pwd1[repl + i];
-		for(int i = repl + 1; i < strlen(pwd1); pwd1[i++] = '\0');
-			pwd1[0] = '~';
+		int repl = strlen(homedir), act = strlen(pwd1);
+		for(int i = 1; i < act - repl; i++) 
+			pwd1[i] = pwd1[repl + i - 1];
+		pwd1[0] = '~';
+		for(int i = act - repl; i < act; pwd1[i++] = '\0');
 	}
 	else if(is_same && strlen(pwd1) == strlen(homedir))
 		strcpy(pwd1, "~");

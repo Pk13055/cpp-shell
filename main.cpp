@@ -32,10 +32,6 @@ signed main() {
 		// removing the leading and trailing spaces
 		/* ADD REMOVE CODE HERE*/
 
-		if(strlen(cmd) == 1)
-			continue;
-
-
 		// exit shell on quit
 		if(!strcmp(cmd,"exit") || !strcmp(cmd,"quit"))
 			break;
