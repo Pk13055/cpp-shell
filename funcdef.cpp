@@ -2,7 +2,7 @@
 #include <unistd.h>
 #include <sys/types.h>
 #include <pwd.h>
-#include <string.h>
+#include <string>
 
 
 #include "classdef.h"
@@ -68,4 +68,20 @@ void BaseDetails::print_term() {
 	cout<<bg_blue<<fg_black<<get_user()<<"@"<<get_host()<<" "<<
 	bg_green<<fg_blue<<"▶ "<<fg_black<<get_cwd()<<" "<<
 	bg_def<<fg_green<<"▶ "<<bg_def<<fg_def;
+}
+
+
+char* remove_padding(char cmd[]) {
+	char* new_cmd = (char*) malloc(COMMAND_LENGTH);
+	int j = 0;
+	bool init_flag = true;
+	for(int i = 0; cmd[i] != '\0'; i++) {
+		if(init_flag && cmd[i] != ' ') {
+			init_flag = false;
+			new_cmd[j++] = cmd[i];
+		}
+		else if(!init_flag) new_cmd[j++] = cmd[i];
+	}
+	for(; new_cmd[j] == ' '; new_cmd[j--] = NULL);
+	return new_cmd;
 }
