@@ -15,7 +15,6 @@ signed main() {
 	Modifier red(FG_RED);
 	Modifier def(FG_DEFAULT);
 	
-	map<pid_t, Process> all_proc;
 
 	// main process execution loop
 	do {
@@ -27,14 +26,19 @@ signed main() {
 		
 		// this creates a parent child fork and the new command is run on the child process
 		Process p;
-
-		cin>>cmd;
+		cin.getline(cmd, COMMAND_LENGTH);
+		
 		// removing the leading and trailing spaces
-		/* ADD REMOVE CODE HERE*/
-
+		strcpy(cmd, remove_padding(cmd));
+		
 		// exit shell on quit
 		if(!strcmp(cmd,"exit") || !strcmp(cmd,"quit"))
 			break;
+
+		else if(!strcmp(cmd, "pwd")) {
+			cout<<b.get_cwd()<<endl;
+			continue;
+		}
 
 		pid_t pid;
 		int status;

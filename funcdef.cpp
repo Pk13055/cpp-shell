@@ -3,13 +3,17 @@
 #include <sys/types.h>
 #include <pwd.h>
 #include <string>
-
+#include <ctype.h>
 
 #include "classdef.h"
 #include "colormod.h"
 using namespace Color;
 using namespace std;
 
+// stores the details of all the processes
+map<pid_t, Process> all_proc;
+
+// stores the pwd aswell as host and username
 BaseDetails::BaseDetails() {
 
 	register struct passwd *pw;
@@ -67,17 +71,35 @@ void BaseDetails::print_term() {
 }
 
 
+
 char* remove_padding(char cmd[]) {
-	char* new_cmd = (char*) malloc(COMMAND_LENGTH);
-	int j = 0;
-	bool init_flag = true;
-	for(int i = 0; cmd[i] != '\0'; i++) {
-		if(init_flag && cmd[i] != ' ') {
-			init_flag = false;
-			new_cmd[j++] = cmd[i];
+	vector<char> sequence;
+	bool is_init = true, space_taken = false;
+	
+	for(int i = 0; i < strlen(cmd); i++) {
+		if(is_init && (cmd[i] == ' ' || cmd[i] == '\t'))
+			continue;
+		else if(is_init && !(cmd[i] == ' ' || cmd[i] == '\t')) {
+			is_init = false;
+			sequence.push_back(cmd[i]);
 		}
-		else if(!init_flag) new_cmd[j++] = cmd[i];
+		else if(!is_init && !space_taken && (cmd[i] == ' ' || cmd[i] == '\t')) {
+			space_taken = true;
+			sequence.push_back(' ');
+		}
+		else if(!is_init && space_taken && !(cmd[i] == ' ' || cmd[i] == '\t')) {
+			sequence.push_back(cmd[i]);
+			space_taken = false;
+		}
+		else if(!is_init && !space_taken && !(cmd[i] == ' ' || cmd[i] == '\t')) {
+			sequence.push_back(cmd[i]);
+		}
 	}
-	for(; new_cmd[j] == ' '; new_cmd[j--] = NULL);
+	
+	char *new_cmd = (char*) malloc(sizeof(char) * sequence.size());
+	int j = 0;
+	if(sequence.back() == ' ') sequence.pop_back();
+	for(vector<char>::iterator i = sequence.begin(); i != sequence.end(); ++i) new_cmd[j++] = *i;
+
 	return new_cmd;
 }

@@ -39,4 +39,6 @@ public:
 	void set_job(int type) { job_type = type; }
 };
 
+extern map<pid_t, Process> all_proc; 
+
 char* remove_padding(char s[]);
