@@ -1,6 +1,7 @@
 #include <bits/stdc++.h>
 #include <unistd.h>
 #include <sys/types.h>
+#include <sys/wait.h>
 #include <pwd.h>
 #include <string>
 #include <ctype.h>
@@ -12,6 +13,7 @@ using namespace std;
 
 // stores the details of all the processes
 map<pid_t, Process> all_proc;
+
 
 // stores the pwd aswell as host and username
 BaseDetails::BaseDetails() {
@@ -71,7 +73,6 @@ void BaseDetails::print_term() {
 }
 
 
-
 char* remove_padding(char cmd[]) {
 	vector<char> sequence;
 	bool is_init = true, space_taken = false;
@@ -94,12 +95,70 @@ char* remove_padding(char cmd[]) {
 		else if(!is_init && !space_taken && !isspace(cmd[i])) {
 			sequence.push_back(cmd[i]);
 		}
-	}
+	}	
 	
 	char *new_cmd = (char*) malloc(sizeof(char) * sequence.size());
 	int j = 0;
 	if(sequence.back() == ' ') sequence.pop_back();
-	for(vector<char>::iterator i = sequence.begin(); i != sequence.end(); ++i) new_cmd[j++] = *i;
+	for(auto i: sequence) new_cmd[j++] = i;
 
 	return new_cmd;
+}
+
+void single_command(char cmd[]) {
+	Modifier red(FG_RED);
+	Modifier def(FG_DEFAULT);
+
+	vector<char*> tokenized;
+	char *temp = strtok(cmd, " ");
+	tokenized.push_back(temp);
+	while(tokenized.back()) {
+		temp = strtok(NULL, " ");
+		if(!temp) break;
+		tokenized.push_back(temp);
+	}
+	if(!tokenized.back()) tokenized.pop_back();
+
+	char** args = (char**) malloc(tokenized.size() * sizeof(char*));
+	int ic = 0;
+	for(auto i: tokenized) args[ic++] = i;
+	
+	if((ic = execvp(args[0], args)) < 0) {
+		cout<<red<<"Error Occured "<<ic<<def<<endl;
+		exit(1);
+	}
+
+}
+
+void exe_cmds(char cmd[]) {
+
+	vector<char*> init_args;
+	char *temp = strtok(cmd, ";");
+	init_args.push_back(remove_padding(temp));
+	while(init_args.back()) {
+		temp = strtok(NULL, ";");
+		if(!temp) break;
+		init_args.push_back(remove_padding(temp));
+	}
+	if(!init_args.back()) init_args.pop_back();
+
+	int ic = 0;
+	pid_t pid;
+	int status;
+	for(auto i: init_args) {
+		if((pid = fork()) == 0) {
+			Process p;
+			p.set_pid(pid);
+			p.set_name(i);
+			p.set_job(1);
+			all_proc[pid] = p;
+			single_command(i);
+		}
+		else {
+			while(wait(&status) != pid); // wait for the process to finish
+			if(kill(pid, SIGTERM)) kill(pid, SIGKILL); // try to kill the process gracefully
+			all_proc.erase(pid);
+		}
+	}
+
 }
