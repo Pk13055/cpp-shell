@@ -123,11 +123,45 @@ void single_command(char cmd[]) {
 	int ic = 0;
 	for(auto i: tokenized) args[ic++] = i;
 	
-	if((ic = execvp(args[0], args)) < 0) {
-		cout<<red<<"Error Occured "<<ic<<def<<endl;
-		exit(1);
+	/* handling for the sigle type of command*/
+	// handling of pipe cd etc should be taken care of here
+
+	if(strcmp(args[0], "cd") == 0) {
+		// cd to the home directory set
+		if(tokenized.size() == 1)
+			chdir(getpwuid(getuid())->pw_dir);
+		// cd to the other dir
+		else if((ic = chdir(args[1])) < 0)
+			cout<<red<<" Error 'cd'-ing into dir "<<args[1]<<def<<endl;
 	}
 
+	else if(strcmp(args[tokenized.size() - 1], "&") == 0) {
+		cout<<"Background process";
+		// handle background processing here
+	}
+	else {
+		bool is_pipe = false, is_redirect = false;
+		for(auto i: tokenized) {
+			if(!is_pipe && strcmp(i, "|") == 0) is_pipe = true;
+			else if(!is_redirect && (strcmp(i, "<") == 0 
+				|| strcmp(i, ">") == 0)) is_redirect = true;
+			if(is_pipe || is_redirect) break;
+		}
+		if(is_pipe) {
+			cout<<"Piped command";
+			// tokenize further and handle here
+			// add a function here
+		}
+		else if(is_redirect) {
+			cout<<"Redirection";
+			// add a function here 	
+		}
+		// at the end check for normal command
+		else if((ic = execvp(args[0], args)) < 0) {
+			cout<<red<<"ERROR "<<ic<<def<<endl;
+			exit(1);
+		}
+	}
 }
 
 void exe_cmds(char cmd[]) {
@@ -156,7 +190,7 @@ void exe_cmds(char cmd[]) {
 		}
 		else {
 			while(wait(&status) != pid); // wait for the process to finish
-			if(kill(pid, SIGTERM)) kill(pid, SIGKILL); // try to kill the process gracefully
+			if(kill(pid, SIGTERM)) kill(pid, 9); // try to kill the process gracefully
 			all_proc.erase(pid);
 		}
 	}

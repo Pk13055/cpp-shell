@@ -54,7 +54,7 @@ signed main() {
 		// parent process should wait until the child process is done
 		else {
 			while(wait(&status) != pid);
-			if(kill(pid, SIGTERM)) kill(pid, SIGKILL); // try to kill the process gracefully
+			if(kill(pid, SIGTERM)) kill(pid, 9); // try to kill the process gracefully
 			all_proc.erase(pid);
 		}
 

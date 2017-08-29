@@ -8,6 +8,13 @@ using namespace std;
 #define PWD_LENGTH 2048
 #define JOB_NAME 200
 
+// JOB TYPES
+#define PARENT 0
+#define CHILD 1
+#define BACKGROUND 2
+#define PIPED 3
+#define REDIRECT 4
+
 
 // stores the PS1 details and other stuff
 class BaseDetails {
