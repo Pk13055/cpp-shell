@@ -11,6 +11,42 @@
 using namespace Color;
 using namespace std;
 
+
+char* getInput() {
+	int position = 0, len = COMMAND_LENGTH;
+	char *buffer = (char*) malloc(sizeof(char) * len);
+	int c;
+
+	if (!buffer) {
+		fprintf(stderr, "shkell: allocation error\n");
+		exit(EXIT_FAILURE);
+	}
+
+	while (1) {
+    // Read a character
+		c = getchar();
+
+    // If we hit EOF, replace it with a null character and return.
+		if (c == EOF || c == '\n') {
+			buffer[position] = '\0';
+			return buffer;
+		} 
+		else 
+			buffer[position] = c;
+		position++;
+
+    // If we have exceeded the buffer, reallocate.
+		if (position >= len) {
+			len += COMMAND_LENGTH;
+			realloc(buffer, len);
+			if (!buffer) {
+				fprintf(stderr, "shkell: allocation error\n");
+				exit(EXIT_FAILURE);
+			}
+		}
+	}
+}
+
 // stores the details of all the processes
 map<pid_t, Process> all_proc;
 // stores the home dir
@@ -47,7 +83,7 @@ void BaseDetails::update() {
 // replaces the home path with '~'
 void  BaseDetails::sub_home() {
 	bool is_same = (strlen(pwd1) >= strlen(home_dir)) && 
-		(!strncmp(pwd1, home_dir, strlen(home_dir)));
+	(!strncmp(pwd1, home_dir, strlen(home_dir)));
 	
 	if(is_same && strlen(pwd1) > strlen(home_dir)) {
     	// - 1 because of ~ repr
@@ -57,8 +93,8 @@ void  BaseDetails::sub_home() {
 		pwd1[0] = '~';
 		for(int i = act - repl; i < act; pwd1[i++] = '\0');
 	}
-	else if(is_same && strlen(pwd1) == strlen(home_dir))
-			strcpy(pwd1, "~");
+else if(is_same && strlen(pwd1) == strlen(home_dir))
+	strcpy(pwd1, "~");
 
 }
 char* BaseDetails::get_user() { return user_name; }
@@ -109,7 +145,31 @@ char* remove_padding(char cmd[]) {
 	if(sequence.back() == ' ') sequence.pop_back();
 	for(auto i: sequence) new_cmd[j++] = i;
 
-	return new_cmd;
+		return new_cmd;
+}
+
+int one_statement(char* cmd[], bool is_bg = false) {
+	pid_t pid, wpid;
+	int status;
+	Process p;
+
+	pid = fork();
+	p.set_pid(pid);
+	p.set_job(CHILD);
+	p.set_name(cmd[0]);
+	all_proc[pid] = p;
+	
+	if (pid == 0) {
+		if (execvp(cmd[0], cmd) == -1) perror("shkell");
+		exit(EXIT_FAILURE);
+	} 
+	else if (pid < 0) perror("shkell");
+	else if(!is_bg) {
+		do 
+		wpid = waitpid(pid, &status, WUNTRACED);
+		while (!WIFEXITED(status) && !WIFSIGNALED(status));
+		all_proc.erase(pid);
+	}
 }
 
 int single_command(char cmd[]) {
@@ -129,54 +189,50 @@ int single_command(char cmd[]) {
 	char** args = (char**) malloc(tokenized.size() * sizeof(char*));
 	int ic = 0;
 	for(auto i: tokenized) args[ic++] = i;
-	
+
 	/* handling for the sigle type of command*/
 	// handling of pipe cd etc should be taken care of here
 
-	if(strcmp(args[0], "cd") == 0) {
+		if(strcmp(args[0], "cd") == 0) {
 		// cd to the home directory set
-		if(tokenized.size() == 1)
+			if(tokenized.size() == 1)
 			// chdir(getpwuid(getuid())->pw_dir);
-			chdir(home_dir);
+				chdir(home_dir);
 		// cd to the other dir
-		else if((ic = chdir(args[1])) < 0)
-			cout<<red<<" Error 'cd'-ing into dir "<<args[1]<<def<<endl;
-	}
+			else if((ic = chdir(args[1])) < 0) {
+				cout<<red<<" Error 'cd'-ing into dir "<<args[1]<<def<<endl;
+				perror("shkell");
+			}
+		}
 
-	else if(strcmp(args[tokenized.size() - 1], "&") == 0) {
-		cout<<"Background process";
-		args[tokenized.size() - 1] = NULL;
-		if((ic = execvp(args[0], args)) < 0) {
-			cout<<red<<"ERROR "<<ic<<def<<endl;
-			exit(1);
+		else if(strcmp(args[tokenized.size() - 1], "&") == 0) {
+			cout<<"Background process";
+			args[tokenized.size() - 1] = NULL;
+			one_statement(args, true);
+			return BACKGROUND;
 		}
-		return BACKGROUND;
-	}
-	else {
-		bool is_pipe = false, is_redirect = false;
-		for(auto i: tokenized) {
-			if(!is_pipe && strcmp(i, "|") == 0) is_pipe = true;
-			else if(!is_redirect && (strcmp(i, "<") == 0 
-				|| strcmp(i, ">") == 0)) is_redirect = true;
-			if(is_pipe || is_redirect) break;
-		}
-		if(is_pipe) {
-			cout<<"Piped command";
+		else {
+			bool is_pipe = false, is_redirect = false;
+			for(auto i: tokenized) {
+				if(!is_pipe && strcmp(i, "|") == 0) is_pipe = true;
+				else if(!is_redirect && (strcmp(i, "<") == 0 
+					|| strcmp(i, ">") == 0)) is_redirect = true;
+					if(is_pipe || is_redirect) break;
+			}
+			if(is_pipe) {
+				cout<<"Piped command";
 			// tokenize further and handle here
 			// add a function here
-			return PIPED;
-		}
-		else if(is_redirect) {
-			cout<<"Redirection";
+				return PIPED;
+			}
+			else if(is_redirect) {
+				cout<<"Redirection";
 			// add a function here 	
-			return REDIRECT;
-		}
+				return REDIRECT;
+			}
 		// at the end check for normal command
-		else if((ic = execvp(args[0], args)) < 0) {
-			cout<<red<<"ERROR "<<ic<<def<<endl;
-			exit(1);
+			else one_statement(args);
 		}
-	}
 
 	return CHILD;
 }
@@ -184,36 +240,14 @@ int single_command(char cmd[]) {
 int exe_cmds(char cmd[]) {
 
 	vector<char*> init_args;
-	char *temp = strtok(cmd, ";");
-	init_args.push_back(remove_padding(temp));
-	while(init_args.back()) {
-		temp = strtok(NULL, ";");
-		if(!temp) break;
-		init_args.push_back(remove_padding(temp));
+	while(cmd) {
+		char* temp = strsep(&cmd, ";");
+		init_args.push_back(temp);
 	}
-	if(!init_args.back()) init_args.pop_back();
 	bool return_type = CHILD;
 	int ic = 0;
-	pid_t pid;
+	pid_t pid, wpid;
 	int status;
-	for(auto i: init_args) {
-		Process p;
-		if((pid = fork()) == 0) {
-			p.set_pid(pid);
-			p.set_name(i);
-			p.set_job(CHILD);
-			all_proc[pid] = p;
-			p.set_job(single_command(i));
-		}
-		else {
-			if(p.get_type() != BACKGROUND) {
-				while(waitpid(-1, &status, WIFEXITED(status)) != pid);
-				// while(wait(&status) != pid); // wait for the process to finish
-				if(kill(pid, SIGTERM)) kill(pid, 9); // try to kill the process gracefully
-				all_proc.erase(pid);
-			}
-			else return_type = BACKGROUND;
-		}
-	}
+	for(auto i: init_args) return_type = single_command(i);
 	return return_type;
 }

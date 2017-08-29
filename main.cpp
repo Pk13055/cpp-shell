@@ -20,7 +20,7 @@ signed main() {
 		b.update();
 		b.print_term();
 		
-		cin.getline(cmd, COMMAND_LENGTH);
+		cmd = getInput();
 		cmd = remove_padding(cmd); // removing the leading and trailing spaces
 		
 		if(strstr(cmd,"exit") || strstr(cmd,"quit")) { exit(0); break; } // exit shell on quit

@@ -60,6 +60,11 @@ char* remove_padding(char s[]);
 // exe_cmds makes multiple calls to single_command
 int exe_cmds(char cmd[]);
 
-// executes single command with arguments
+// executes single command with piping etc
 int single_command(char cmd[]);
 
+// executes the basic one command
+int one_statement(char* cmd[], bool);
+
+// gets the input command from the user
+char* getInput();
