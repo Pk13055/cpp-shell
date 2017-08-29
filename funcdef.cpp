@@ -13,7 +13,8 @@ using namespace std;
 
 // stores the details of all the processes
 map<pid_t, Process> all_proc;
-
+// stores the home dir
+char home_dir[PWD_LENGTH / 2];
 
 // stores the pwd aswell as host and username
 BaseDetails::BaseDetails() {
@@ -23,6 +24,15 @@ BaseDetails::BaseDetails() {
 	uid = geteuid();
 	pw = getpwuid(uid);
 	if (pw)  strcpy(user_name, pw->pw_name);
+
+	// stores the home dir
+	/*
+	// uncomment this if you want the home_dir to be PC home_dir
+	if ((home_dir = getenv("HOME")) == NULL) 
+		home_dir = getpwuid(getuid())->pw_dir;
+	*/
+	// comment this if you want home dir to be PC home_dir
+	getcwd(home_dir, PWD_LENGTH / 2);
 
 	getcwd(pwd1, PWD_LENGTH);
 	gethostname(host_name, SYSTEM_NAME_LENGTH);
@@ -36,21 +46,18 @@ void BaseDetails::update() {
 
 // replaces the home path with '~'
 void  BaseDetails::sub_home() {
-	const char *homedir;
-	if ((homedir = getenv("HOME")) == NULL) 
-		homedir = getpwuid(getuid())->pw_dir;
-	bool is_same = (strlen(pwd1) >= strlen(homedir)) && 
-		(!strncmp(pwd1, homedir, strlen(homedir)));
+	bool is_same = (strlen(pwd1) >= strlen(home_dir)) && 
+		(!strncmp(pwd1, home_dir, strlen(home_dir)));
 	
-	if(is_same && strlen(pwd1) > strlen(homedir)) {
+	if(is_same && strlen(pwd1) > strlen(home_dir)) {
     	// - 1 because of ~ repr
-		int repl = strlen(homedir), act = strlen(pwd1);
-		for(int i = 1; i < act - repl; i++) 
-			pwd1[i] = pwd1[repl + i - 1];
+		int repl = strlen(home_dir), act = strlen(pwd1);
+		for(int i = 1; i <= act - repl; i++) 
+			pwd1[i] = pwd1[repl + i];
 		pwd1[0] = '~';
 		for(int i = act - repl; i < act; pwd1[i++] = '\0');
 	}
-	else if(is_same && strlen(pwd1) == strlen(homedir))
+	else if(is_same && strlen(pwd1) == strlen(home_dir))
 			strcpy(pwd1, "~");
 
 }
@@ -105,7 +112,7 @@ char* remove_padding(char cmd[]) {
 	return new_cmd;
 }
 
-void single_command(char cmd[]) {
+int single_command(char cmd[]) {
 	Modifier red(FG_RED);
 	Modifier def(FG_DEFAULT);
 
@@ -129,7 +136,8 @@ void single_command(char cmd[]) {
 	if(strcmp(args[0], "cd") == 0) {
 		// cd to the home directory set
 		if(tokenized.size() == 1)
-			chdir(getpwuid(getuid())->pw_dir);
+			// chdir(getpwuid(getuid())->pw_dir);
+			chdir(home_dir);
 		// cd to the other dir
 		else if((ic = chdir(args[1])) < 0)
 			cout<<red<<" Error 'cd'-ing into dir "<<args[1]<<def<<endl;
@@ -137,7 +145,12 @@ void single_command(char cmd[]) {
 
 	else if(strcmp(args[tokenized.size() - 1], "&") == 0) {
 		cout<<"Background process";
-		// handle background processing here
+		args[tokenized.size() - 1] = NULL;
+		if((ic = execvp(args[0], args)) < 0) {
+			cout<<red<<"ERROR "<<ic<<def<<endl;
+			exit(1);
+		}
+		return BACKGROUND;
 	}
 	else {
 		bool is_pipe = false, is_redirect = false;
@@ -151,10 +164,12 @@ void single_command(char cmd[]) {
 			cout<<"Piped command";
 			// tokenize further and handle here
 			// add a function here
+			return PIPED;
 		}
 		else if(is_redirect) {
 			cout<<"Redirection";
 			// add a function here 	
+			return REDIRECT;
 		}
 		// at the end check for normal command
 		else if((ic = execvp(args[0], args)) < 0) {
@@ -162,9 +177,11 @@ void single_command(char cmd[]) {
 			exit(1);
 		}
 	}
+
+	return CHILD;
 }
 
-void exe_cmds(char cmd[]) {
+int exe_cmds(char cmd[]) {
 
 	vector<char*> init_args;
 	char *temp = strtok(cmd, ";");
@@ -175,24 +192,28 @@ void exe_cmds(char cmd[]) {
 		init_args.push_back(remove_padding(temp));
 	}
 	if(!init_args.back()) init_args.pop_back();
-
+	bool return_type = CHILD;
 	int ic = 0;
 	pid_t pid;
 	int status;
 	for(auto i: init_args) {
+		Process p;
 		if((pid = fork()) == 0) {
-			Process p;
 			p.set_pid(pid);
 			p.set_name(i);
-			p.set_job(1);
+			p.set_job(CHILD);
 			all_proc[pid] = p;
-			single_command(i);
+			p.set_job(single_command(i));
 		}
 		else {
-			while(wait(&status) != pid); // wait for the process to finish
-			if(kill(pid, SIGTERM)) kill(pid, 9); // try to kill the process gracefully
-			all_proc.erase(pid);
+			if(p.get_type() != BACKGROUND) {
+				while(waitpid(-1, &status, WIFEXITED(status)) != pid);
+				// while(wait(&status) != pid); // wait for the process to finish
+				if(kill(pid, SIGTERM)) kill(pid, 9); // try to kill the process gracefully
+				all_proc.erase(pid);
+			}
+			else return_type = BACKGROUND;
 		}
 	}
-
+	return return_type;
 }

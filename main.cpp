@@ -23,40 +23,16 @@ signed main() {
 		cin.getline(cmd, COMMAND_LENGTH);
 		cmd = remove_padding(cmd); // removing the leading and trailing spaces
 		
-		if((strcmp(cmd,"exit") == 0) || (strcmp(cmd,"quit") == 0)) { exit(0); break; } // exit shell on quit
+		if(strstr(cmd,"exit") || strstr(cmd,"quit")) { exit(0); break; } // exit shell on quit
 		else if(strcmp(cmd, "pinfo") == 0) {
 			cout<<"PID\t"<<"Name"<<endl;
 			for(auto i: all_proc)
 				cout<<i.first<<"\t"<<i.second.get_name()<<endl;
 			continue;
 		}
-
 		
 		/* EXECUTION OF PROCESS */
-
-		pid_t pid;
-		int status;
-		Process p;
-
-		// pid is 0 for the child process
-		if((pid = fork()) == 0) {
-			
-			p.set_pid(pid);
-			p.set_name(cmd);
-			p.set_job(0);
-			all_proc[pid] = p;
-
-			exe_cmds(cmd);
-			
-		}
-
-		// targets non-zero, ie, parent process
-		// parent process should wait until the child process is done
-		else {
-			while(wait(&status) != pid);
-			if(kill(pid, SIGTERM)) kill(pid, 9); // try to kill the process gracefully
-			all_proc.erase(pid);
-		}
+		exe_cmds(cmd);
 
 	} while(true);
 }

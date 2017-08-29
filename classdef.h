@@ -16,12 +16,12 @@ using namespace std;
 #define REDIRECT 4
 
 
+extern char home_dir[PWD_LENGTH / 2];
 // stores the PS1 details and other stuff
 class BaseDetails {
 	char user_name[USER_NAME_LENGTH];
 	char host_name[SYSTEM_NAME_LENGTH];
 	char pwd1[PWD_LENGTH];
-	char home_dir[PWD_LENGTH / 2];
 	void sub_home();
 	char* get_host();
 	char* get_user();
@@ -58,8 +58,8 @@ extern map<pid_t, Process> all_proc; // stores all the processess
 char* remove_padding(char s[]);
 
 // exe_cmds makes multiple calls to single_command
-void exe_cmds(char cmd[]);
+int exe_cmds(char cmd[]);
 
 // executes single command with arguments
-void single_command(char cmd[]);
+int single_command(char cmd[]);
 
