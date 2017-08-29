@@ -52,6 +52,19 @@ map<pid_t, Process> all_proc;
 // stores the home dir
 char home_dir[PWD_LENGTH / 2];
 
+// checks for background and prints to terminal
+void check_bg() {
+	int status, first_time = 1;
+	for(auto i: all_proc) {
+		waitpid(i.first, &status, WNOHANG);
+		if(WIFEXITED(status) || WIFSTOPPED(status)) {
+			if(first_time) { cout<<endl; first_time = false; }
+			cout<<status<<" "<<i.first<<" "<<(i.second).get_name()<<endl;
+			all_proc.erase(i.first);
+		}
+	}
+}
+
 // stores the pwd aswell as host and username
 BaseDetails::BaseDetails() {
 

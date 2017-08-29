@@ -16,9 +16,13 @@ signed main() {
 	// main process execution loop
 	do {
 		
-		
+		// updates to the pwd
 		b.update();
+		// checks for background ends
+		check_bg();
+		// prints the PS1
 		b.print_term();
+
 		
 		cmd = getInput();
 		cmd = remove_padding(cmd); // removing the leading and trailing spaces

@@ -54,6 +54,9 @@ public:
 
 extern map<pid_t, Process> all_proc; // stores all the processess
 
+// checks for background and prints to terminal
+void check_bg(); 
+
 // removes the padding and intermediate spaces
 char* remove_padding(char s[]);
 
