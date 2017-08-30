@@ -2,9 +2,12 @@
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/wait.h>
+#include <sys/stat.h>
 #include <pwd.h>
 #include <string>
 #include <ctype.h>
+
+#include <dirent.h>
 
 #include "classdef.h"
 #include "colormod.h"
@@ -23,10 +26,10 @@ char* getInput() {
 	}
 
 	while (1) {
-    // Read a character
+	// Read a character
 		c = getchar();
 
-    // If we hit EOF, replace it with a null character and return.
+	// If we hit EOF, replace it with a null character and return.
 		if (c == EOF || c == '\n') {
 			buffer[position] = '\0';
 			return buffer;
@@ -35,7 +38,7 @@ char* getInput() {
 			buffer[position] = c;
 		position++;
 
-    // If we have exceeded the buffer, reallocate.
+	// If we have exceeded the buffer, reallocate.
 		if (position >= len) {
 			len += COMMAND_LENGTH;
 			realloc(buffer, len);
@@ -59,7 +62,7 @@ void check_bg() {
 		waitpid(i.first, &status, WNOHANG);
 		if(WIFEXITED(status) || WIFSTOPPED(status)) {
 			if(first_time) { cout<<endl; first_time = false; }
-			cout<<status<<" "<<i.first<<" "<<(i.second).get_name()<<endl;
+				cout<<status<<" "<<i.first<<" "<<(i.second).get_name()<<endl;
 			all_proc.erase(i.first);
 		}
 	}
@@ -99,7 +102,7 @@ void  BaseDetails::sub_home() {
 	(!strncmp(pwd1, home_dir, strlen(home_dir)));
 	
 	if(is_same && strlen(pwd1) > strlen(home_dir)) {
-    	// - 1 because of ~ repr
+		// - 1 because of ~ repr
 		int repl = strlen(home_dir), act = strlen(pwd1);
 		for(int i = 1; i <= act - repl; i++) 
 			pwd1[i] = pwd1[repl + i];
@@ -126,15 +129,20 @@ void BaseDetails::print_term() {
 	cout<<bg_blue<<fg_black<<get_user()<<"@"<<get_host()<<" "<<
 	bg_green<<fg_blue<<"▶ "<<fg_black<<get_cwd()<<" "<<
 	bg_def<<fg_green<<"▶ "<<bg_def<<fg_def;
+
+	// printf("%s@%s:%s>\n",get_user(),get_host(),get_cwd());
 }
 
 
 char* remove_padding(char cmd[]) {
+
 	vector<char> sequence;
 	bool is_init = true, space_taken = false;
 	
 	for(int i = 0; i < strlen(cmd); i++) {
 		if(is_init && isspace(cmd[i]))
+			continue;
+		else if (cmd[i]!=' ' && isspace(cmd[i]))
 			continue;
 		else if(is_init && !isspace(cmd[i])) {
 			is_init = false;
@@ -160,6 +168,7 @@ char* remove_padding(char cmd[]) {
 
 		return new_cmd;
 }
+
 
 int one_statement(char* cmd[], bool is_bg = false) {
 	pid_t pid, wpid;
@@ -218,6 +227,9 @@ int single_command(char cmd[]) {
 			}
 		}
 
+		else if(strcmp(args[0],"ls")==0)
+			ls(tokenized);	
+
 		else if(strcmp(args[tokenized.size() - 1], "&") == 0) {
 			cout<<"Background process";
 			args[tokenized.size() - 1] = NULL;
@@ -255,12 +267,26 @@ int exe_cmds(char cmd[]) {
 	vector<char*> init_args;
 	while(cmd) {
 		char* temp = strsep(&cmd, ";");
+		printf("%s\n",temp );		
 		init_args.push_back(temp);
 	}
+
 	bool return_type = CHILD;
 	int ic = 0;
 	pid_t pid, wpid;
 	int status;
-	for(auto i: init_args) return_type = single_command(i);
-	return return_type;
+	for(auto cmd: init_args) {
+
+		if(strstr(cmd,"exit") || strstr(cmd,"quit")) { exit(0); break; } // exit shell on quit
+		else if(strcmp(cmd, "pinfo") == 0) {
+			cout<<"PID\t"<<"Name"<<endl;
+			for(auto i: all_proc)
+				cout<<i.first<<"\t"<<i.second.get_name()<<endl;
+			continue;
+		}
+		
+		return_type = single_command(cmd); 
+	}
+	
+	return CHILD; 
 }
