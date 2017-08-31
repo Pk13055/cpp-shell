@@ -16,7 +16,7 @@
 #include <time.h>
 #include <langinfo.h>
 
-
+#include "classdef.h"
 using namespace std;
 
 static void print_permissions(mode_t mode)
@@ -101,7 +101,6 @@ void print_ls(char dir[], bool set_a, bool set_l){
 	}
 	closedir(mydir);
 }
-
 
 
 void ls(vector<char*> tokenized){

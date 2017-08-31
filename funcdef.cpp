@@ -214,8 +214,7 @@ int single_command(char cmd[]) {
 	for(auto i: tokenized) args[ic++] = i;
 		args[tokenized.size()] = NULL;
 
-	/* handling for the sigle type of command*/
-	// handling of pipe cd etc should be taken care of here
+	/* handling for the single type of command*/
 
 		if(strcmp(args[0], "cd") == 0) {
 		// cd to the home directory set
