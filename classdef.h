@@ -7,6 +7,9 @@ using namespace std;
 #define COMMAND_LENGTH 500
 #define PWD_LENGTH 2048
 #define JOB_NAME 200
+#define FILE_NAME 200
+#define STAT_LENGTH 1024
+#define PID_LENGTH 10
 
 // JOB TYPES
 #define PARENT 0
