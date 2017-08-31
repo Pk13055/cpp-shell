@@ -3,8 +3,6 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <pwd.h>
-#include <string>
-#include <ctype.h>
 
 #include <dirent.h>
 #include <getopt.h>
@@ -16,7 +14,7 @@
 #include <time.h>
 #include <langinfo.h>
 
-
+#include "classdef.h"
 using namespace std;
 
 static void print_permissions(mode_t mode)
@@ -109,7 +107,6 @@ void print_ls(char dir[], bool set_a, bool set_l){
 		printf("\n");
 	closedir(mydir);
 }
-
 
 
 void ls(vector<char*> tokenized){

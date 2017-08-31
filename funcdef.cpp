@@ -1,14 +1,15 @@
 #include <bits/stdc++.h>
 #include <unistd.h>
-#include <sys/types.h>
 #include <sys/wait.h>
-#include <sys/stat.h>
 #include <pwd.h>
+<<<<<<< HEAD
 #include <string>
 #include <ctype.h>
 #include <fcntl.h>
 
 #include <dirent.h>
+=======
+>>>>>>> ba59d56683b40b7e168e2f763537351cbdd32c3f
 
 #include "classdef.h"
 #include "colormod.h"
@@ -222,24 +223,28 @@ int single_command(char cmd[]) {
 	for(auto i: tokenized) args[ic++] = i;
 		args[tokenized.size()] = NULL;
 
-	/* handling for the sigle type of command*/
-	// handling of pipe cd etc should be taken care of here
+	/* handling for the single type of command*/
 
+		// cd command block
 		if(strcmp(args[0], "cd") == 0) {
-		// cd to the home directory set
+
 			if(tokenized.size() == 1)
-			// chdir(getpwuid(getuid())->pw_dir);
-				chdir(home_dir);
-		// cd to the other dir
+				chdir(home_dir); // chdir(getpwuid(getuid())->pw_dir);
+	
+			// cd to the other dir
 			else if((ic = chdir(args[1])) < 0) {
 				cout<<red<<" Error 'cd'-ing into dir "<<args[1]<<def<<endl;
 				perror("shkell");
 			}
 		}
 
-		else if(strcmp(args[0],"ls")==0)
-			ls(tokenized);	
+		// case ls
+		else if(strcmp(args[0],"ls")==0) ls(tokenized);
 
+		// case echo
+		else if(!strcmp(args[0], "echo")) echo(tokenized);
+
+		// pinfo custom command
 		else if(strcmp(args[0], "pinfo") == 0) {
 
 			char stat_file[FILE_NAME],exe_file[FILE_NAME];
@@ -302,6 +307,8 @@ int single_command(char cmd[]) {
 			one_statement(args, true);
 			return BACKGROUND;
 		}
+		
+		// checks for piping and redirection type commands
 		else {
 			bool is_pipe = false, is_redirect = false;
 			for(auto i: tokenized) {
@@ -310,24 +317,30 @@ int single_command(char cmd[]) {
 					|| strcmp(i, ">") == 0)) is_redirect = true;
 					if(is_pipe || is_redirect) break;
 			}
+
+			// piped commands
 			if(is_pipe) {
 				cout<<"Piped command"<<endl;
 			// tokenize further and handle here
 			// add a function here
 				return PIPED;
 			}
+
+			// redirect command
 			else if(is_redirect) {
 				cout<<"Redirection"<<endl;
 			// add a function here 	
 				return REDIRECT;
 			}
-		// at the end check for normal command
+		
+			// normal command
 			else one_statement(args);
 		}
 
 	return CHILD;
 }
 
+// converts multiple commands and runs them one by one
 int exe_cmds(char cmd[]) {
 
 	vector<char*> init_args;
@@ -344,8 +357,7 @@ int exe_cmds(char cmd[]) {
 	int status;
 	for(auto cmd: init_args) {
 
-		if(strstr(cmd,"exit") || strstr(cmd,"quit")) { exit(0); break; } // exit shell on quit
-		
+		if(!strcmp(cmd,"exit") || !strcmp(cmd,"quit")) exit(0); // exit shell on quit
 		return_type = single_command(cmd); 
 	}
 	

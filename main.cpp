@@ -25,7 +25,6 @@ signed main() {
 
 
 		cmd = getInput();
-
 		cmd = remove_padding(cmd); // removing the leading and trailing spaces
 		
 		/* EXECUTION OF PROCESS */
