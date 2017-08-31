@@ -138,7 +138,6 @@ char* remove_padding(char cmd[]) {
 
 	vector<char> sequence;
 	bool is_init = true, space_taken = false;
-	
 	for(int i = 0; i < strlen(cmd); i++) {
 		if(is_init && isspace(cmd[i]))
 			continue;
@@ -160,13 +159,13 @@ char* remove_padding(char cmd[]) {
 			sequence.push_back(cmd[i]);
 		}
 	}	
-	
+
 	char *new_cmd = (char*) malloc(sizeof(char) * sequence.size());
 	int j = 0;
+	if(sequence.size()>0)
 	if(sequence.back() == ' ') sequence.pop_back();
 	for(auto i: sequence) new_cmd[j++] = i;
 		new_cmd[sequence.size()] = '\0';
-
 		return new_cmd;
 }
 
@@ -191,6 +190,7 @@ int one_statement(char* cmd[], bool is_bg = false) {
 		do 
 		wpid = waitpid(pid, &status, WUNTRACED);
 		while (!WIFEXITED(status) && !WIFSIGNALED(status));
+		printf("Background process: %d name:%s is over\n",pid,all_proc[pid].get_name());
 		all_proc.erase(pid);
 	}
 }
@@ -268,7 +268,9 @@ int exe_cmds(char cmd[]) {
 	vector<char*> init_args;
 	while(cmd) {
 		char* temp = strsep(&cmd, ";");
-		init_args.push_back(temp);
+		temp = remove_padding(temp);
+		if(strlen(temp))
+			init_args.push_back(temp);
 	}
 
 	bool return_type = CHILD;
