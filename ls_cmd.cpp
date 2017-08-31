@@ -62,6 +62,7 @@ void print_ls(char dir[], bool set_a, bool set_l){
 	mydir = opendir(dir);
 	if (mydir == NULL) {
 
+		//currently working with files of the same directory
 		mydir = opendir(".");
 		while((myfile = readdir(mydir)) != 	NULL)
 			if(!strcmp(myfile->d_name,dir)){
@@ -94,11 +95,18 @@ void print_ls(char dir[], bool set_a, bool set_l){
 
 				printf("%jd", (intmax_t)mystat.st_size);
 
+				printf(" %s\n", myfile->d_name);
 			}
 
-			printf(" %s\n", myfile->d_name);
+			else
+				printf("%s ",myfile->d_name);
+
+			
 		}
 	}
+	
+	if(!set_l)
+		printf("\n");
 	closedir(mydir);
 }
 
