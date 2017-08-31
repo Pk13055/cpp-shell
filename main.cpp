@@ -19,7 +19,7 @@ signed main() {
 		// updates to the pwd
 		b.update();
 		// checks for background ends
-		check_bg();
+		// check_bg();
 		// prints the PS1
 		b.print_term();
 

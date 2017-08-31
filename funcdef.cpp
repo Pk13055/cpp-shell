@@ -181,7 +181,8 @@ int one_statement(char* cmd[], bool is_bg = false) {
 	p.set_name(cmd[0]);
 	all_proc[pid] = p;
 	
-	if (pid == 0) {
+	if (pid == 0) {		
+	
 		if (execvp(cmd[0], cmd) == -1) perror("shkell");
 		exit(EXIT_FAILURE);
 	} 
@@ -190,7 +191,6 @@ int one_statement(char* cmd[], bool is_bg = false) {
 		do 
 		wpid = waitpid(pid, &status, WUNTRACED);
 		while (!WIFEXITED(status) && !WIFSIGNALED(status));
-		printf("Background process: %d name:%s is over\n",pid,all_proc[pid].get_name());
 		all_proc.erase(pid);
 	}
 }
@@ -209,9 +209,10 @@ int single_command(char cmd[]) {
 	}
 	if(!tokenized.back()) tokenized.pop_back();
 
-	char** args = (char**) malloc(tokenized.size() * sizeof(char*));
+	char** args = (char**) malloc((tokenized.size()+1) * sizeof(char*));
 	int ic = 0;
 	for(auto i: tokenized) args[ic++] = i;
+		args[tokenized.size()] = NULL;
 
 	/* handling for the sigle type of command*/
 	// handling of pipe cd etc should be taken care of here
@@ -231,6 +232,12 @@ int single_command(char cmd[]) {
 		else if(strcmp(args[0],"ls")==0)
 			ls(tokenized);	
 
+		else if(strcmp(args[0], "pinfo") == 0) {
+			cout<<"PID\t"<<"Name"<<endl;
+			for(auto i: all_proc)
+				cout<<i.first<<"\t"<<i.second.get_name()<<endl;
+		}
+
 		else if(strcmp(args[tokenized.size() - 1], "&") == 0) {
 			cout<<"Background process"<<endl;
 			args[tokenized.size() - 1] = NULL;
@@ -246,13 +253,13 @@ int single_command(char cmd[]) {
 					if(is_pipe || is_redirect) break;
 			}
 			if(is_pipe) {
-				cout<<"Piped command";
+				cout<<"Piped command"<<endl;
 			// tokenize further and handle here
 			// add a function here
 				return PIPED;
 			}
 			else if(is_redirect) {
-				cout<<"Redirection";
+				cout<<"Redirection"<<endl;
 			// add a function here 	
 				return REDIRECT;
 			}
@@ -280,12 +287,6 @@ int exe_cmds(char cmd[]) {
 	for(auto cmd: init_args) {
 
 		if(strstr(cmd,"exit") || strstr(cmd,"quit")) { exit(0); break; } // exit shell on quit
-		else if(strcmp(cmd, "pinfo") == 0) {
-			cout<<"PID\t"<<"Name"<<endl;
-			for(auto i: all_proc)
-				cout<<i.first<<"\t"<<i.second.get_name()<<endl;
-			continue;
-		}
 		
 		return_type = single_command(cmd); 
 	}

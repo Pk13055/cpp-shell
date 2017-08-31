@@ -59,10 +59,17 @@ void print_ls(char dir[], bool set_a, bool set_l){
 	char buf[512],datestring[256];
 
 
-	mydir = (opendir(dir));
+	mydir = opendir(dir);
 	if (mydir == NULL) {
-            printf ("Cannot open directory '%s'\n", dir);
-            return ;
+
+		mydir = opendir(".");
+		while((myfile = readdir(mydir)) != 	NULL)
+			if(!strcmp(myfile->d_name,dir)){
+				printf("%s\n",dir);
+				return;}
+
+        printf ("Cannot open file or directory '%s'\n", dir);
+        return ;
         }
 
 
