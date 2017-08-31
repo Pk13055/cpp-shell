@@ -61,7 +61,7 @@ void check_bg() {
 	for(auto i: all_proc) {
 		waitpid(i.first, &status, WNOHANG);
 		if(WIFEXITED(status) || WIFSTOPPED(status)) {
-			if(first_time) { cout<<endl; first_time = false; }
+			if(first_time) { cout<<endl; first_time = 0; }
 				cout<<status<<" "<<i.first<<" "<<(i.second).get_name()<<endl;
 			all_proc.erase(i.first);
 		}
@@ -165,6 +165,7 @@ char* remove_padding(char cmd[]) {
 	int j = 0;
 	if(sequence.back() == ' ') sequence.pop_back();
 	for(auto i: sequence) new_cmd[j++] = i;
+		new_cmd[sequence.size()] = '\0';
 
 		return new_cmd;
 }
@@ -231,7 +232,7 @@ int single_command(char cmd[]) {
 			ls(tokenized);	
 
 		else if(strcmp(args[tokenized.size() - 1], "&") == 0) {
-			cout<<"Background process";
+			cout<<"Background process"<<endl;
 			args[tokenized.size() - 1] = NULL;
 			one_statement(args, true);
 			return BACKGROUND;
@@ -267,7 +268,6 @@ int exe_cmds(char cmd[]) {
 	vector<char*> init_args;
 	while(cmd) {
 		char* temp = strsep(&cmd, ";");
-		printf("%s\n",temp );		
 		init_args.push_back(temp);
 	}
 
