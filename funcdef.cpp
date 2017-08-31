@@ -237,6 +237,19 @@ int single_command(char cmd[]) {
 		else if(!strcmp(args[0], "echo")) echo(tokenized);
 
 		// pinfo custom command
+		
+		else if(!strcmp(args[0],"interrupt")){
+			FILE* memfile = fopen("/proc/interrupts","r");
+			char line[STAT_LENGTH];
+
+			if(memfile == NULL)
+				cout<<"Couldn't open /proc/interrupts"<<endl;	
+			else
+				for(int i=0;fgets(line, sizeof(line),memfile);i++)
+					if(i == 0 || i ==2)	{printf("%s",line);}
+		}
+
+
 		else if(strcmp(args[0], "pinfo") == 0) {
 
 			char stat_file[FILE_NAME],exe_file[FILE_NAME];
