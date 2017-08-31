@@ -2,14 +2,6 @@
 #include <unistd.h>
 #include <sys/wait.h>
 #include <pwd.h>
-<<<<<<< HEAD
-#include <string>
-#include <ctype.h>
-#include <fcntl.h>
-
-#include <dirent.h>
-=======
->>>>>>> ba59d56683b40b7e168e2f763537351cbdd32c3f
 
 #include "classdef.h"
 #include "colormod.h"

@@ -1,5 +1,6 @@
 #include <bits/stdc++.h>
 #include <vector>
+
 #include "classdef.h"
 #include "colormod.h"
 using namespace std;

@@ -1,7 +1,4 @@
 #include <bits/stdc++.h>
-#include <sys/wait.h>
-#include <unistd.h>
-#include <string>
 
 #include "classdef.h"
 #include "colormod.h"
