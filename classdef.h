@@ -72,4 +72,8 @@ int one_statement(char* cmd[], bool);
 // gets the input command from the user
 char* getInput();
 
+// implementation of ls
 void ls(vector<char*>);
+
+// implementation of echo
+bool echo(vector<char*>);

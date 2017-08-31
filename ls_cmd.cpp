@@ -3,8 +3,6 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <pwd.h>
-#include <string>
-#include <ctype.h>
 
 #include <dirent.h>
 #include <getopt.h>
