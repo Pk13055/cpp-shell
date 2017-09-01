@@ -15,7 +15,6 @@ signed main() {
 	BaseDetails b;
 	char *cmd = (char*) malloc(COMMAND_LENGTH * sizeof(char));
 	char shell_prompt[10];
-    rl_bind_key('\t', rl_complete);
 
 
 	// main process execution loop
@@ -28,17 +27,16 @@ signed main() {
 		// prints the PS1
 		b.print_term();
 
-        snprintf(shell_prompt, sizeof(shell_prompt), "");
-
 		// cmd = getInput();
-        cmd = readline(shell_prompt);
+        cmd = readline(" ");
         
 		cmd = remove_padding(cmd); // removing the leading and trailing spaces
 		
 		/* EXECUTION OF PROCESS */
 		exe_cmds(cmd);
-
-        add_history(cmd);
+		
+    	add_history(cmd);
+        
         free(cmd);
 
 	} while(true);
