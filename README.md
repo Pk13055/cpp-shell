@@ -27,3 +27,6 @@
 	- At the end now, include your header file in the `main.cpp` as `#include "yourheader"`.
 
 - Open a pull request describing your feature addition.
+
+## Dependencies 
+	sudo apt-get install libreadline-dev 
