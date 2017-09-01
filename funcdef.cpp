@@ -128,8 +128,8 @@ void BaseDetails::print_term() {
 	Modifier bg_def(BG_DEFAULT);
 	Modifier fg_black(FG_BLACK);
 	cout<<bg_blue<<fg_black<<get_user()<<"@"<<get_host()<<" "<<
-	bg_green<<fg_blue<<"▶ "<<fg_black<<get_cwd()<<" "<<
-	bg_def<<fg_green<<"▶ "<<bg_def<<fg_def;
+	bg_green<<fg_blue<<"\uE0B0 "<<fg_black<<get_cwd()<<" "<<
+	bg_def<<fg_green<<"\uE0B0 "<<bg_def<<fg_def;
 
 	// printf("%s@%s:%s>\n",get_user(),get_host(),get_cwd());
 }
