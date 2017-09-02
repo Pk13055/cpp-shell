@@ -20,12 +20,10 @@ signed main() {
 	// main process execution loop
 	do {
 		
-		// updates to the pwd
-		b.update();
-		// checks for background ends
-		// check_bg();
-		// prints the PS1
-		b.print_term();
+		
+		b.update(); // updates to the pwd
+		b.print_term(); // prints the PS1
+		check_bg(); // checks for background ends
 
 		// cmd = getInput();
         cmd = readline(" ");

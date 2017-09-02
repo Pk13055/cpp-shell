@@ -40,12 +40,20 @@ class Process {
 	char name[JOB_NAME];
 	int job_type, status;
 	pid_t pid;
+	pid_t parent;
 public:
 	pid_t 	get_pid() 	{ return pid; 		}
+	pid_t 	get_parent(){ return parent; 	}
 	int 	get_type() 	{ return job_type; 	}
 	char* 	get_name() 	{ return name; 		}
+
+	void print_p() {
+		cout<<"PID : "<<get_pid()<<"\tPARENT : "<<get_parent()<<endl
+			<<"Job type : "<<job_type<<"\tName : "<<get_name()<<endl;
+	}
 	
 	void set_pid(pid_t t) 	{ pid = t; 			}
+	void set_parent(pid_t t){ parent = t; 		}
 	void set_job(int type) 	{ job_type = type; 	}
 	void set_name(char s[]) { 
 		if(strlen(s) < JOB_NAME) 

@@ -1,5 +1,6 @@
 #include <bits/stdc++.h>
 #include <unistd.h>
+#include <stdlib.h>
 #include <sys/wait.h>
 #include <pwd.h>
 
@@ -58,13 +59,15 @@ char home_dir[PWD_LENGTH / 2];
 
 // checks for background and prints to terminal
 void check_bg() {
-	int status, first_time = 1;
-	for(auto i: all_proc) {
-		waitpid(i.first, &status, WNOHANG);
-		if(WIFEXITED(status) || WIFSTOPPED(status)) {
-			if(first_time) { cout<<endl; first_time = 0; }
-				cout<<status<<" "<<i.first<<" "<<(i.second).get_name()<<endl;
-			all_proc.erase(i.first);
+	if(all_proc.size()) {
+		int status;
+		for(map<pid_t, Process>::iterator i = 
+			all_proc.begin(); i != all_proc.end(); i++) {
+				pid_t wpid = waitpid(((*i).first), &status, WUNTRACED);
+				if (WIFEXITED(status) || WIFSIGNALED(status)) {
+					cout<<"- ["<<((*i).second).get_parent()<<"] ended"<<endl;
+					all_proc.erase((*i).first);
+				}
 		}
 	}
 }
@@ -129,9 +132,7 @@ void BaseDetails::print_term() {
 	Modifier fg_black(FG_BLACK);
 	cout<<bg_blue<<fg_black<<get_user()<<"@"<<get_host()<<" "<<
 	bg_green<<fg_blue<<"\uE0B0 "<<fg_black<<get_cwd()<<" "<<
-	bg_def<<fg_green<<"\uE0B0 "<<bg_def<<fg_def;
-
-	// printf("%s@%s:%s>\n",get_user(),get_host(),get_cwd());
+	bg_def<<fg_green<<"\uE0B0"<<bg_def<<fg_def;
 }
 
 
@@ -171,28 +172,30 @@ char* remove_padding(char cmd[]) {
 }
 
 
-int one_statement(char* cmd[], bool is_bg = false) {
+int one_statement(char* cmd[], bool is_bg) {
 	pid_t pid, wpid;
 	int status;
 	Process p;
 
 	pid = fork();
-	p.set_pid(pid);
-	p.set_job(CHILD);
-	p.set_name(cmd[0]);
-	all_proc[pid] = p;
-	
-	if (pid == 0) {		
-	
+	int _pid = random(); 
+
+	if (pid == 0) {
+		p.set_pid(_pid);
+		p.set_parent(getppid());
+		p.set_job(CHILD);
+		p.set_name(cmd[0]);
 		if (execvp(cmd[0], cmd) == -1) perror("shkell");
-		exit(EXIT_FAILURE);
+		else {
+			all_proc[pid] = p;
+			if(!is_bg) _exit(status);
+		}
 	} 
-	else if (pid < 0) perror("shkell");
 	else if(!is_bg) {
 		do 
-		wpid = waitpid(pid, &status, WUNTRACED);
+			wpid = waitpid(pid, &status, WUNTRACED);
 		while (!WIFEXITED(status) && !WIFSIGNALED(status));
-		all_proc.erase(pid);
+		all_proc.erase(_pid);
 	}
 }
 
@@ -228,6 +231,12 @@ int single_command(char cmd[]) {
 				cout<<red<<" Error 'cd'-ing into dir "<<args[1]<<def<<endl;
 				perror("shkell");
 			}
+		}
+
+		// case nightswatch
+		if(strcmp(args[0], "nightswatch") == 0) {
+			strcpy(args[0], "watch");
+			one_statement(args, false);
 		}
 
 		// case ls
@@ -307,7 +316,7 @@ int single_command(char cmd[]) {
 
 
 		else if(strcmp(args[tokenized.size() - 1], "&") == 0) {
-			cout<<"Background process"<<endl;
+			cout<<"+ ["<<all_proc.size() + 1<<"] "<<args[0]<<endl;
 			args[tokenized.size() - 1] = NULL;
 			one_statement(args, true);
 			return BACKGROUND;
@@ -339,7 +348,7 @@ int single_command(char cmd[]) {
 			}
 		
 			// normal command
-			else one_statement(args);
+			else one_statement(args, false);
 		}
 
 	return CHILD;
@@ -366,5 +375,5 @@ int exe_cmds(char cmd[]) {
 		return_type = single_command(cmd); 
 	}
 	
-	return CHILD; 
+	return return_type; 
 }
