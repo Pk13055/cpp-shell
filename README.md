@@ -29,4 +29,5 @@
 - Open a pull request describing your feature addition.
 
 ## Dependencies 
-	sudo apt-get install libreadline-dev 
+	Most systems come installed with `libreadline`, a package used for the autocompletion and other facilities. Install the following incase you're presented with an error
+	` sudo apt-get install libreadline6 libreadline6-dev`
