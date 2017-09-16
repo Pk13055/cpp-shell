@@ -88,3 +88,6 @@ void ls(vector<char*>);
 
 // implementation of echo
 bool echo(vector<char*>);
+
+// handling of redirect commands
+int handle_redirect(vector<char*>);

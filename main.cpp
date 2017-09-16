@@ -8,7 +8,6 @@
 #include "classdef.h"
 #include "colormod.h"
 using namespace std;
-using namespace Color;
 
 signed main() {
 	
