@@ -327,8 +327,8 @@ int single_command(char cmd[]) {
 			bool is_pipe = false, is_redirect = false;
 			for(auto i: tokenized) {
 				if(!is_pipe && strcmp(i, "|") == 0) is_pipe = true;
-				else if(!is_redirect && (strcmp(i, "<") == 0 
-					|| strcmp(i, ">") == 0)) is_redirect = true;
+				else if(!is_redirect && (strstr(i, "<") || strstr(i, ">")  || strstr(i, "<<")  
+					|| strstr(i, ">>") )) is_redirect = true;
 					if(is_pipe || is_redirect) break;
 			}
 
@@ -342,8 +342,7 @@ int single_command(char cmd[]) {
 
 			// redirect command
 			else if(is_redirect) {
-				cout<<"Redirection"<<endl;
-			// add a function here 	
+				handle_redirect(tokenized);
 				return REDIRECT;
 			}
 		
