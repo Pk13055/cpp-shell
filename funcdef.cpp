@@ -9,47 +9,11 @@
 using namespace Color;
 using namespace std;
 
-char* int_to_string(int pid){
-
-	char* buf = (char*)malloc(PID_LENGTH);
-	sprintf(buf,"%d",pid);
-	return buf;
-}
-
-
 char* getInput() {
-	int position = 0, len = COMMAND_LENGTH;
-	char *buffer = (char*) malloc(sizeof(char) * len);
-	int c;
-
-	if (!buffer) {
-		fprintf(stderr, "shkell: allocation error\n");
-		exit(EXIT_FAILURE);
-	}
-
-	while (1) {
-	// Read a character 
-		c = getchar();
-
-	// If we hit EOF, replace it with a null character and return.
-		if (c == EOF || c == '\n') {
-			buffer[position] = '\0';
-			return buffer;
-		} 
-		else 
-			buffer[position] = c;
-		position++;
-
-	// If we have exceeded the buffer, reallocate.
-		if (position >= len) {
-			len += COMMAND_LENGTH;
-			realloc(buffer, len);
-			if (!buffer) {
-				fprintf(stderr, "shkell: allocation error\n");
-				exit(EXIT_FAILURE);
-			}
-		}
-	}
+	char *buffer = NULL;
+	size_t buff_size = COMMAND_LENGTH;
+	getline(&buffer, &buff_size, stdin);
+	return buffer;
 }
 
 // stores the details of all the processes
@@ -138,6 +102,9 @@ void BaseDetails::print_term() {
 
 char* remove_padding(char cmd[]) {
 
+	if(cmd == NULL)
+		return NULL;
+
 	vector<char> sequence;
 	bool is_init = true, space_taken = false;
 	for(int i = 0; i < strlen(cmd); i++) {
@@ -200,6 +167,28 @@ int one_statement(char* cmd[], bool is_bg) {
 }
 
 int single_command(char cmd[]) {
+
+	// bool is_redirect = false;
+	// for(int i =0; i< strlen(cmd);i++) {
+	// 	if(!is_redirect && (strstr(cmd[i], "<") || strstr(cmd[i], ">")  || strstr(cmd[i], "<<")  
+	// 		|| strstr(cmd[i], ">>") )) is_redirect = true
+	// }
+	
+	// redirect command
+	// if(is_redirect)
+	// 	handle_redirect(pipe_commands);
+
+	int is_pipe = 0;
+	for(int i =0; i< strlen(cmd);i++) {
+		if(cmd[i] == '|') is_pipe ++;
+	}
+
+	if(is_pipe && cmd) 
+		{pipeline(cmd,is_pipe); return PIPED;}		
+		
+	// normal command
+
+
 	Modifier red(FG_RED);
 	Modifier def(FG_DEFAULT);
 
@@ -259,48 +248,9 @@ int single_command(char cmd[]) {
 		}
 
 
-		else if(strcmp(args[0], "pinfo") == 0) {
-
-			char stat_file[FILE_NAME],exe_file[FILE_NAME];
-			char line[STAT_LENGTH],execute_path[PWD_LENGTH];
-
-			strcpy(stat_file,"/proc/");
-			if (tokenized.size() == 1)
-				strcat(stat_file,int_to_string(getpid()));
-			else if (tokenized.size() ==2)
-				strcat(stat_file,args[1]);
+		else if(strcmp(args[0], "pinfo") == 0)
+			pinfo(tokenized);
 			
-			strcat(exe_file,stat_file);
-			strcat(stat_file,"/stat");
-
-			FILE* inputFile = fopen(stat_file,"r");
-			if(inputFile == NULL)
-				cout<<"Process doesnt exist"<<endl;	
-			else
-			{
-				
-				fgets(line, sizeof(line),inputFile);
-
-				char* stat_param[100];
-				stat_param[0] = strtok(line," ");
-				for(int i=0;stat_param[i] != NULL;i++)
-					stat_param[i+1] = strtok(NULL," ");
-
-				cout<<"PID:"<<stat_param[0]<<endl;
-				cout<<"Name:"<<stat_param[1]<<endl;
-				cout<<"State:"<<stat_param[2]<<endl;
-				cout<<"Virtual Memory:"<<stat_param[22]<<endl;
-			
-				strcat(exe_file,"/exe");
-				if(readlink(exe_file, execute_path, PWD_LENGTH)< 0)
-					cout<<"Unable to locate the executable path"<<endl;
-				else
-					cout<<"Executable Path:"<<execute_path<<endl;	
-				exe_file[0] = '\0';
-
-			}
-				
-		}
 
 		else if(strcmp(args[0],"dirty") == 0){
 
@@ -323,32 +273,9 @@ int single_command(char cmd[]) {
 		}
 		
 		// checks for piping and redirection type commands
-		else {
-			bool is_pipe = false, is_redirect = false;
-			for(auto i: tokenized) {
-				if(!is_pipe && strcmp(i, "|") == 0) is_pipe = true;
-				else if(!is_redirect && (strstr(i, "<") || strstr(i, ">")  || strstr(i, "<<")  
-					|| strstr(i, ">>") )) is_redirect = true;
-					if(is_pipe || is_redirect) break;
-			}
 
-			// piped commands
-			if(is_pipe) {
-				cout<<"Piped command"<<endl;
-			// tokenize further and handle here
-			// add a function here
-				return PIPED;
-			}
-
-			// redirect command
-			else if(is_redirect) {
-				handle_redirect(tokenized);
-				return REDIRECT;
-			}
-		
-			// normal command
-			else one_statement(args, false);
-		}
+		else
+			return one_statement(args,false);		
 
 	return CHILD;
 }
@@ -357,21 +284,23 @@ int single_command(char cmd[]) {
 int exe_cmds(char cmd[]) {
 
 	vector<char*> init_args;
-	while(cmd) {
-		char* temp = strsep(&cmd, ";");
+	char* temp =strtok(cmd, ";");
+	while(temp!=NULL) {
 		temp = remove_padding(temp);
 		if(strlen(temp))
 			init_args.push_back(temp);
+		temp = strtok(NULL,";");
 	}
 
-	bool return_type = CHILD;
+	int return_type = CHILD;
 	int ic = 0;
 	pid_t pid, wpid;
 	int status;
 	for(auto cmd: init_args) {
+		if(cmd == NULL || !strcmp(cmd,"exit") || !strcmp(cmd,"quit")) exit(0); // exit shell on quit
 
-		if(!strcmp(cmd,"exit") || !strcmp(cmd,"quit")) exit(0); // exit shell on quit
 		return_type = single_command(cmd); 
+	
 	}
 	
 	return return_type; 

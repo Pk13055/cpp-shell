@@ -61,13 +61,19 @@ void print_ls(char dir[], bool set_a, bool set_l){
 	if (mydir == NULL) {
 
 		//currently working with files of the same directory
-		mydir = opendir(".");
-		while((myfile = readdir(mydir)) != 	NULL)
-			if(!strcmp(myfile->d_name,dir)){
-				printf("%s\n",dir);
-				return;}
+		char pwd_dir[PWD_LENGTH];
+		getcwd(pwd_dir,PWD_LENGTH);
+		strcat(pwd_dir,"/");
+		strcat(pwd_dir,dir);
 
-        printf ("Cannot open file or directory '%s'\n", dir);
+		FILE* check_file_exist = fopen(pwd_dir,"r");
+
+		if(check_file_exist != NULL)
+			printf("%s\n",dir);
+		
+		else
+       		printf("Cannot open file or directory '%s'\n", dir);
+        
         return ;
         }
 
@@ -97,7 +103,7 @@ void print_ls(char dir[], bool set_a, bool set_l){
 			}
 
 			else
-				printf("%s ",myfile->d_name);
+				printf("%s\t",myfile->d_name);
 
 			
 		}
