@@ -91,3 +91,7 @@ bool echo(vector<char*>);
 
 // handling of redirect commands
 int handle_redirect(vector<char*>);
+
+void pinfo(vector<char*>);
+
+int pipeline(char*, int);

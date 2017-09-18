@@ -72,7 +72,7 @@ void print_ls(char dir[], bool set_a, bool set_l){
 			printf("%s\n",dir);
 		
 		else
-       		printf ("Cannot open file or directory '%s'\n", dir);
+       		printf("Cannot open file or directory '%s'\n", dir);
         
         return ;
         }
