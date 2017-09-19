@@ -225,28 +225,14 @@ int one_statement(vector<char*> tokenized,char* cmd[], bool is_bg) {
 
 int single_command(char cmd[]) {
 
-	// bool is_redirect = false;
-	// for(int i =0; i< strlen(cmd);i++) {
-	// 	if(!is_redirect && (strstr(cmd[i], "<") || strstr(cmd[i], ">")  || strstr(cmd[i], "<<")  
-	// 		|| strstr(cmd[i], ">>") )) is_redirect = true
-	// }
-	
-	// redirect command
-	// if(is_redirect)
-	// 	handle_redirect(pipe_commands);
 
-	int is_pipe = 0;
-	for(int i =0; i< strlen(cmd);i++) {
-		if(cmd[i] == '|') is_pipe ++;
-	}
+	// due to different style of implementations we have to create this string. Can be removed during clean up.
+	char cmd2[COMMAND_LENGTH];
 
-	if(is_pipe && cmd) 
-		{pipeline(cmd,is_pipe); return PIPED;}		
-		
-	// normal command
+	strcpy(cmd2,cmd);
 
 	vector<char*> tokenized;
-	char *temp = strtok(cmd, " ");
+	char *temp = strtok(cmd2, " ");
 	while(temp!=NULL) {
 
 		temp = remove_padding(temp);
@@ -265,15 +251,35 @@ int single_command(char cmd[]) {
 				temp[strlen(temp)]=temp[0];
 				temp[strlen(temp)+1] = '\0';
 				}
-
-		}
-
+	}
 
 		if(strlen(temp)) 
 			tokenized.push_back(temp);
 		temp = strtok(NULL, " ");
 	}
 
+
+	// redirect command
+	bool is_redirect = false;
+	for(auto i: tokenized)
+		if(!is_redirect && (strstr(i, "<") || strstr(i, ">")  || strstr(i, "<<")  
+			|| strstr(i, ">>") )) { is_redirect = true; break; }
+	if(is_redirect) {
+		handle_redirect(tokenized);
+		return REDIRECT;
+	}
+
+	// piped command 
+	int is_pipe = 0;
+	for(int i =0; i< strlen(cmd);i++) {
+		if(cmd[i] == '|') is_pipe ++;
+	}
+	if(is_pipe && cmd) {
+		pipeline(cmd,is_pipe); 
+		return PIPED;
+	}		
+		
+	// normal command
 
 	char** args = (char**) malloc((tokenized.size()+1) * sizeof(char*));
 	int ic = 0;
@@ -307,8 +313,6 @@ int single_command(char cmd[]) {
 
 	else
 		return one_statement(tokenized,args,false);		
-
-	return CHILD;
 }
 
 // converts multiple commands and runs them one by one
