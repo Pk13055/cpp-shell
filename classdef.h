@@ -78,7 +78,7 @@ int exe_cmds(char cmd[]);
 int single_command(char cmd[]);
 
 // executes the basic one command
-int one_statement(char* cmd[], bool);
+int one_statement(vector<char*> tokenized,char* cmd[], bool);
 
 // gets the input command from the user
 char* getInput();

@@ -139,7 +139,7 @@ char* remove_padding(char cmd[]) {
 }
 
 
-int one_statement(char* cmd[], bool is_bg) {
+int one_statement(vector<char*> tokenized,char* cmd[], bool is_bg) {
 	pid_t pid, wpid;
 	int status;
 	Process p;
@@ -152,11 +152,66 @@ int one_statement(char* cmd[], bool is_bg) {
 		p.set_parent(getppid());
 		p.set_job(CHILD);
 		p.set_name(cmd[0]);
-		if (execvp(cmd[0], cmd) == -1) perror("shkell");
-		else {
-			all_proc[pid] = p;
-			if(!is_bg) _exit(status);
+
+		/* handling for the single type of command*/
+
+		// cd command block
+
+		// case nightswatch
+		if(strcmp(cmd[0], "nightswatch") == 0) {
+			strcpy(cmd[0], "watch");
+			strcpy(tokenized[0],"wacth"); 
+			one_statement(tokenized,cmd, false);
+
 		}
+
+		// case ls
+		else if(strcmp(cmd[0],"ls")==0) ls(tokenized);
+
+		// case echo
+		else if(!strcmp(cmd[0], "echo")) echo(tokenized);
+
+		// pinfo custom command
+		
+		else if(!strcmp(cmd[0],"interrupt")){
+			FILE* memfile = fopen("/proc/interrupts","r");
+			char line[STAT_LENGTH];
+
+			if(memfile == NULL)
+				cout<<"Couldn't open /proc/interrupts"<<endl;	
+			else
+				for(int i=0;fgets(line, sizeof(line),memfile);i++)
+					if(i == 0 || i ==2)	{printf("%s",line);}
+		}
+
+
+		else if(strcmp(cmd[0], "pinfo") == 0)
+			pinfo(tokenized);
+			
+
+		else if(strcmp(cmd[0],"dirty") == 0){
+
+			FILE* memfile = fopen("/proc/meminfo","r");
+			char line[STAT_LENGTH];
+
+			if(memfile == NULL)
+				cout<<"Couldn't open /proc/meminfo"<<endl;	
+			else
+				for(int i=0;fgets(line, sizeof(line),memfile);i++)
+					if(i == 16)	{printf("%s",line); break;}
+		}
+
+		else 
+			if (execvp(cmd[0], cmd) == -1) perror("shkell");
+
+			else {
+				all_proc[pid] = p;
+				if(!is_bg) _exit(status);
+			}
+	
+
+		exit(0);	
+
 	} 
 	else if(!is_bg) {
 		do 
@@ -164,6 +219,8 @@ int one_statement(char* cmd[], bool is_bg) {
 		while (!WIFEXITED(status) && !WIFSIGNALED(status));
 		all_proc.erase(_pid);
 	}
+
+
 }
 
 int single_command(char cmd[]) {
@@ -188,94 +245,68 @@ int single_command(char cmd[]) {
 		
 	// normal command
 
-
-	Modifier red(FG_RED);
-	Modifier def(FG_DEFAULT);
-
 	vector<char*> tokenized;
 	char *temp = strtok(cmd, " ");
-	tokenized.push_back(temp);
-	while(tokenized.back()) {
+	while(temp!=NULL) {
+
+		temp = remove_padding(temp);
+
+		if(temp[0]=='\"' && temp[strlen(temp)-1]!='\"')
+		{
+			char *temp2 = strtok(NULL,"\"");
+		
+			strcat(temp," ");
+
+			if(temp2 != NULL)
+				strcat(temp,temp2);
+
+			if(temp[strlen(temp)-1]!=temp[0])
+				{
+				temp[strlen(temp)]=temp[0];
+				temp[strlen(temp)+1] = '\0';
+				}
+
+		}
+
+
+		if(strlen(temp)) 
+			tokenized.push_back(temp);
 		temp = strtok(NULL, " ");
-		if(!temp) break;
-		tokenized.push_back(temp);
 	}
-	if(!tokenized.back()) tokenized.pop_back();
+
 
 	char** args = (char**) malloc((tokenized.size()+1) * sizeof(char*));
 	int ic = 0;
 	for(auto i: tokenized) args[ic++] = i;
 		args[tokenized.size()] = NULL;
 
-	/* handling for the single type of command*/
-
-		// cd command block
-		if(strcmp(args[0], "cd") == 0) {
-
-			if(tokenized.size() == 1)
-				chdir(home_dir); // chdir(getpwuid(getuid())->pw_dir);
-	
-			// cd to the other dir
-			else if((ic = chdir(args[1])) < 0) {
-				cout<<red<<" Error 'cd'-ing into dir "<<args[1]<<def<<endl;
-				perror("shkell");
-			}
-		}
-
-		// case nightswatch
-		if(strcmp(args[0], "nightswatch") == 0) {
-			strcpy(args[0], "watch");
-			one_statement(args, false);
-		}
-
-		// case ls
-		else if(strcmp(args[0],"ls")==0) ls(tokenized);
-
-		// case echo
-		else if(!strcmp(args[0], "echo")) echo(tokenized);
-
-		// pinfo custom command
-		
-		else if(!strcmp(args[0],"interrupt")){
-			FILE* memfile = fopen("/proc/interrupts","r");
-			char line[STAT_LENGTH];
-
-			if(memfile == NULL)
-				cout<<"Couldn't open /proc/interrupts"<<endl;	
-			else
-				for(int i=0;fgets(line, sizeof(line),memfile);i++)
-					if(i == 0 || i ==2)	{printf("%s",line);}
-		}
-
-
-		else if(strcmp(args[0], "pinfo") == 0)
-			pinfo(tokenized);
-			
-
-		else if(strcmp(args[0],"dirty") == 0){
-
-			FILE* memfile = fopen("/proc/meminfo","r");
-			char line[STAT_LENGTH];
-
-			if(memfile == NULL)
-				cout<<"Couldn't open /proc/meminfo"<<endl;	
-			else
-				for(int i=0;fgets(line, sizeof(line),memfile);i++)
-					if(i == 16)	{printf("%s",line); break;}
-		}
-
-
-		else if(strcmp(args[tokenized.size() - 1], "&") == 0) {
-			cout<<"+ ["<<all_proc.size() + 1<<"] "<<args[0]<<endl;
-			args[tokenized.size() - 1] = NULL;
-			one_statement(args, true);
-			return BACKGROUND;
-		}
+	if(strcmp(args[tokenized.size() - 1], "&") == 0) {
+		cout<<"+ ["<<all_proc.size() + 1<<"] "<<args[0]<<endl;
+		args[tokenized.size() - 1] = NULL;
+		tokenized.pop_back();
+		one_statement(tokenized,args, true);
+		return BACKGROUND;
+	}
 		
 		// checks for piping and redirection type commands
 
-		else
-			return one_statement(args,false);		
+	if(strcmp(args[0], "cd") == 0) {
+		Modifier red(FG_RED);
+		Modifier def(FG_DEFAULT);
+
+		if(tokenized.size() == 1)
+			chdir(home_dir); // chdir(getpwuid(getuid())->pw_dir);
+
+		// cd to the other dir
+		else if((ic = chdir(args[1])) < 0) {
+			cout<<red<<" Error 'cd'-ing into dir "<<args[1]<<def<<endl;
+			perror("shkell");
+		
+		}
+	}
+
+	else
+		return one_statement(tokenized,args,false);		
 
 	return CHILD;
 }
@@ -297,7 +328,7 @@ int exe_cmds(char cmd[]) {
 	pid_t pid, wpid;
 	int status;
 	for(auto cmd: init_args) {
-		if(cmd == NULL || !strcmp(cmd,"exit") || !strcmp(cmd,"quit")) exit(0); // exit shell on quit
+		if(!strcmp(cmd,"exit") || !strcmp(cmd,"quit")) exit(0); // exit shell on quit
 
 		return_type = single_command(cmd); 
 	
