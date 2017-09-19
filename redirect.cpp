@@ -83,15 +83,34 @@ bool check_redirection(
 char* get_command(vector<char*> separate) {
 	char command[COMMAND_LENGTH];
 	bool is_first = true;
-	for(vector<char*>::iterator i = separate.begin(); i != separate.end(); i++) {
+	// for(vector<char*>::iterator i = separate.begin(); i != separate.end(); i++) {
+	for(auto i: separate) {
 			if(is_first)
-				strcpy(command, (*i)), is_first = false;
+				strcpy(command, i), is_first = false;
 			else
-				strcat(command, " "), strcat(command, (*i));
+				strcat(command, " "), strcat(command, i);
 		}
-	strcat(command, '\0');
+	strcat(command, "\0");
 	cout<<command<<endl;
 	return command;
+}
+
+char** prepare_one(char cmd[]) {
+	vector<char*> tokenized;
+	char *temp = strtok(cmd, " ");
+	tokenized.push_back(temp);
+	while(tokenized.back()) {
+		temp = strtok(NULL, " ");
+		if(!temp) break;
+		tokenized.push_back(temp);
+	}
+	if(!tokenized.back()) tokenized.pop_back();
+
+	char** args = (char**) malloc((tokenized.size()+1) * sizeof(char*));
+	int ic = 0;
+	for(auto i: tokenized) args[ic++] = i;
+		args[tokenized.size()] = NULL;
+	return args;
 }
 
 // the main function that handles the redirection
@@ -114,24 +133,24 @@ int handle_redirect(vector<char*> tokens) {
 	// handle only single redirection for now
 	if(codes.size() == 1) {
 		vector<char*> cmd1 = separated[0], cmd2 = separated[1];
+		// flags for the opening of the outputfile
 		int status,
-		fg = /*((codes[0].second == FORWARD_SINGLE || codes[0].second == BACKWARD_SINGLE)? 0 : O_APPEND) |*/
+		fg = ((codes[0].second == FORWARD_SINGLE || codes[0].second == BACKWARD_SINGLE)? 0 : O_APPEND) |
 		O_WRONLY | O_TRUNC | O_CREAT;
+		char *file_, *cmd;
+		// remove input redirection for now
 		if (codes[0].first == 0) codes[0].first = 1;
-
-		if(codes[0].second == FORWARD_SINGLE || codes[0].second == FORWARD_APPEND) {
-			// flags for the opening of the outputfile
-			int fd = open(get_command(cmd2), fg, S_IRUSR | S_IRGRP | S_IWGRP | S_IWUSR);
-			dup2(fd, codes[0].first);
-			close(fd);
-			status = single_command(get_command(cmd1));
-		}
-		else {
-			int fd = open(get_command(cmd1), fg, S_IRUSR | S_IRGRP | S_IWGRP | S_IWUSR);
-			dup2(fd, codes[0].first);
-			close(fd);
-			status = single_command(get_command(cmd2));
-		}
+		cout<<codes[0].first<<endl;
+		if(codes[0].second == FORWARD_SINGLE || codes[0].second == FORWARD_APPEND) 
+			file_ = get_command(cmd2), cmd = get_command(cmd1);
+		else file_ = get_command(cmd1), cmd = get_command(cmd2);
+		
+		// open the file as output storer
+		int fd = open(file_, fg, S_IRUSR | S_IRGRP | S_IWGRP | S_IWUSR);
+		dup2(fd, codes[0].first); // replace the stdout/er with fd
+		close(fd); // close unused fd
+		status = single_command(cmd);
+		// status = one_statement(prepare_one(cmd), false);
 	}
 	// add multiple redirection and types later
 	else {

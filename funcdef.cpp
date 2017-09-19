@@ -168,23 +168,16 @@ int one_statement(char* cmd[], bool is_bg) {
 
 int single_command(char cmd[]) {
 
-	// bool is_redirect = false;
-	// for(int i =0; i< strlen(cmd);i++) {
-	// 	if(!is_redirect && (strstr(cmd[i], "<") || strstr(cmd[i], ">")  || strstr(cmd[i], "<<")  
-	// 		|| strstr(cmd[i], ">>") )) is_redirect = true
-	// }
-	
-	// redirect command
-	// if(is_redirect)
-	// 	handle_redirect(pipe_commands);
 
+	// piped command 
 	int is_pipe = 0;
 	for(int i =0; i< strlen(cmd);i++) {
 		if(cmd[i] == '|') is_pipe ++;
 	}
-
-	if(is_pipe && cmd) 
-		{pipeline(cmd,is_pipe); return PIPED;}		
+	if(is_pipe && cmd) {
+		pipeline(cmd,is_pipe); 
+		return PIPED;
+	}		
 		
 	// normal command
 
@@ -207,75 +200,83 @@ int single_command(char cmd[]) {
 	for(auto i: tokenized) args[ic++] = i;
 		args[tokenized.size()] = NULL;
 
+	// redirect command
+	bool is_redirect = false;
+	for(auto i: tokenized)
+		if(!is_redirect && (strstr(i, "<") || strstr(i, ">")  || strstr(i, "<<")  
+			|| strstr(i, ">>") )) { is_redirect = true; break; }
+	if(is_redirect) {
+		handle_redirect(tokenized);
+		return REDIRECT;
+	}
+
 	/* handling for the single type of command*/
 
-		// cd command block
-		if(strcmp(args[0], "cd") == 0) {
+	// cd command block
+	if(strcmp(args[0], "cd") == 0) {
 
-			if(tokenized.size() == 1)
-				chdir(home_dir); // chdir(getpwuid(getuid())->pw_dir);
+		if(tokenized.size() == 1)
+			chdir(home_dir); // chdir(getpwuid(getuid())->pw_dir);
+
+		// cd to the other dir
+		else if((ic = chdir(args[1])) < 0) {
+			cout<<red<<" Error 'cd'-ing into dir "<<args[1]<<def<<endl;
+			perror("shkell");
+		}
+	}
+
+	// case nightswatch
+	if(strcmp(args[0], "nightswatch") == 0) {
+		strcpy(args[0], "watch");
+		one_statement(args, false);
+	}
+
+	// case ls
+	else if(strcmp(args[0],"ls")==0) ls(tokenized);
+
+	// case echo
+	else if(!strcmp(args[0], "echo")) echo(tokenized);
+
+	// pinfo custom command
 	
-			// cd to the other dir
-			else if((ic = chdir(args[1])) < 0) {
-				cout<<red<<" Error 'cd'-ing into dir "<<args[1]<<def<<endl;
-				perror("shkell");
-			}
-		}
+	else if(!strcmp(args[0],"interrupt")){
+		FILE* memfile = fopen("/proc/interrupts","r");
+		char line[STAT_LENGTH];
 
-		// case nightswatch
-		if(strcmp(args[0], "nightswatch") == 0) {
-			strcpy(args[0], "watch");
-			one_statement(args, false);
-		}
-
-		// case ls
-		else if(strcmp(args[0],"ls")==0) ls(tokenized);
-
-		// case echo
-		else if(!strcmp(args[0], "echo")) echo(tokenized);
-
-		// pinfo custom command
-		
-		else if(!strcmp(args[0],"interrupt")){
-			FILE* memfile = fopen("/proc/interrupts","r");
-			char line[STAT_LENGTH];
-
-			if(memfile == NULL)
-				cout<<"Couldn't open /proc/interrupts"<<endl;	
-			else
-				for(int i=0;fgets(line, sizeof(line),memfile);i++)
-					if(i == 0 || i ==2)	{printf("%s",line);}
-		}
-
-
-		else if(strcmp(args[0], "pinfo") == 0)
-			pinfo(tokenized);
-			
-
-		else if(strcmp(args[0],"dirty") == 0){
-
-			FILE* memfile = fopen("/proc/meminfo","r");
-			char line[STAT_LENGTH];
-
-			if(memfile == NULL)
-				cout<<"Couldn't open /proc/meminfo"<<endl;	
-			else
-				for(int i=0;fgets(line, sizeof(line),memfile);i++)
-					if(i == 16)	{printf("%s",line); break;}
-		}
-
-
-		else if(strcmp(args[tokenized.size() - 1], "&") == 0) {
-			cout<<"+ ["<<all_proc.size() + 1<<"] "<<args[0]<<endl;
-			args[tokenized.size() - 1] = NULL;
-			one_statement(args, true);
-			return BACKGROUND;
-		}
-		
-		// checks for piping and redirection type commands
-
+		if(memfile == NULL)
+			cout<<"Couldn't open /proc/interrupts"<<endl;	
 		else
-			return one_statement(args,false);		
+			for(int i=0;fgets(line, sizeof(line),memfile);i++)
+				if(i == 0 || i ==2)	{printf("%s",line);}
+	}
+
+
+	else if(strcmp(args[0], "pinfo") == 0)
+		pinfo(tokenized);
+		
+
+	else if(strcmp(args[0],"dirty") == 0){
+
+		FILE* memfile = fopen("/proc/meminfo","r");
+		char line[STAT_LENGTH];
+
+		if(memfile == NULL)
+			cout<<"Couldn't open /proc/meminfo"<<endl;	
+		else
+			for(int i=0;fgets(line, sizeof(line),memfile);i++)
+				if(i == 16)	{printf("%s",line); break;}
+	}
+
+
+	else if(strcmp(args[tokenized.size() - 1], "&") == 0) {
+		cout<<"+ ["<<all_proc.size() + 1<<"] "<<args[0]<<endl;
+		args[tokenized.size() - 1] = NULL;
+		one_statement(args, true);
+		return BACKGROUND;
+	}
+	
+	else
+		return one_statement(args,false);		
 
 	return CHILD;
 }
