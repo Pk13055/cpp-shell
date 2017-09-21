@@ -1,8 +1,10 @@
 #include <bits/stdc++.h>
+#include <iostream>
 #include <unistd.h>
 #include <stdlib.h>
 #include <sys/wait.h>
 #include <pwd.h>
+#include <readline/readline.h>
 
 #include "classdef.h"
 #include "colormod.h"
@@ -85,7 +87,7 @@ char* BaseDetails::get_user() { return user_name; }
 char* BaseDetails::get_host() { return host_name; }
 char* BaseDetails::get_cwd()  { return pwd1; 	  }
 
-void BaseDetails::print_term() {
+char* BaseDetails::print_term() {
 	Modifier bg_green(BG_GREEN);
 	Modifier bg_blue(BG_BLUE);
 	Modifier fg_green(FG_GREEN);
@@ -94,9 +96,13 @@ void BaseDetails::print_term() {
 	Modifier fg_def(FG_DEFAULT);
 	Modifier bg_def(BG_DEFAULT);
 	Modifier fg_black(FG_BLACK);
-	cout<<bg_blue<<fg_black<<get_user()<<"@"<<get_host()<<" "<<
+	char buff[PWD_LENGTH] = {'\0'};
+	stringstream st;
+    st.rdbuf()->pubsetbuf(buff, sizeof(buff));
+	st<<bg_blue<<fg_black<<get_user()<<"@"<<get_host()<<" "<<
 	bg_green<<fg_blue<<"\uE0B0 "<<fg_black<<get_cwd()<<" "<<
-	bg_def<<fg_green<<"\uE0B0"<<bg_def<<fg_def;
+	bg_def<<fg_green<<"\uE0B0"<<bg_def<<fg_def<<" ";
+	return readline(buff);
 }
 
 

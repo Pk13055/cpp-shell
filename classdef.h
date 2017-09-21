@@ -29,7 +29,7 @@ class BaseDetails {
 	char* get_host();
 	char* get_user();
 public:
-	void print_term();
+	char* print_term();
 	char* get_cwd();
 	BaseDetails();
 	void update();

@@ -21,12 +21,11 @@ signed main() {
 		
 		
 		b.update(); // updates to the pwd
-		b.print_term(); // prints the PS1
 		check_bg(); // checks for background ends
 
 		// cmd = getInput();
-        cmd = readline(" ");
         
+        cmd = b.print_term();
 		cmd = remove_padding(cmd); // removing the leading and trailing spaces
 		
 		/* EXECUTION OF PROCESS */
