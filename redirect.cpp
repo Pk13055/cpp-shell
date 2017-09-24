@@ -51,8 +51,10 @@ pair< vector< vector<char*> >, vector< pair<int, int> > >
 				// change part to include both side numbering in later release
 				codes.push_back(make_pair(1, get_type(i)));
 			else codes.push_back(make_pair(i[0] - 48, get_type(i + 1)));
-			if(cur_arg.size())
+			if(cur_arg.size()) {
+				cur_arg.push_back("\0");
 				separated.push_back(cur_arg);
+			}
 			cur_arg.clear();
 		}
 		else cur_arg.push_back(i);
@@ -80,7 +82,7 @@ bool check_redirection(
 
 
 // convert char* vector to string
-char* get_command(vector<char*> separate) {
+void get_command(vector<char*> separate, char final_command[]) {
 	char command[COMMAND_LENGTH];
 	bool is_first = true;
 	// for(vector<char*>::iterator i = separate.begin(); i != separate.end(); i++) {
@@ -90,9 +92,8 @@ char* get_command(vector<char*> separate) {
 			else
 				strcat(command, " "), strcat(command, i);
 		}
-	strcat(command, "\0");
 	cout<<command<<endl;
-	return command;
+	strcpy(final_command, command);
 }
 
 char** prepare_one(char cmd[]) {
@@ -104,8 +105,6 @@ char** prepare_one(char cmd[]) {
 		if(!temp) break;
 		tokenized.push_back(temp);
 	}
-	if(!tokenized.back()) tokenized.pop_back();
-
 	char** args = (char**) malloc((tokenized.size()+1) * sizeof(char*));
 	int ic = 0;
 	for(auto i: tokenized) args[ic++] = i;
@@ -128,29 +127,49 @@ int handle_redirect(vector<char*> tokens) {
 		return false;
 	}
 
+	int temp_handles[] = {dup(0), dup(1), dup(2)};
+	
 	// execute and redirect here here //
-
+	
 	// handle only single redirection for now
 	if(codes.size() == 1) {
-		vector<char*> cmd1 = separated[0], cmd2 = separated[1];
-		// flags for the opening of the outputfile
-		int status,
-		fg = ((codes[0].second == FORWARD_SINGLE || codes[0].second == BACKWARD_SINGLE)? 0 : O_APPEND) |
-		O_WRONLY | O_TRUNC | O_CREAT;
-		char *file_, *cmd;
-		// remove input redirection for now
-		if (codes[0].first == 0) codes[0].first = 1;
-		cout<<codes[0].first<<endl;
-		if(codes[0].second == FORWARD_SINGLE || codes[0].second == FORWARD_APPEND) 
-			file_ = get_command(cmd2), cmd = get_command(cmd1);
-		else file_ = get_command(cmd1), cmd = get_command(cmd2);
+		int flags = ((codes[0].second == FORWARD_APPEND || codes[0].second == BACKWARD_APPEND)? 0 : O_TRUNC)
+			| O_APPEND | O_WRONLY | O_CREAT,
+			permissions =  S_IRUSR | S_IRGRP | S_IWGRP | S_IWUSR;
+		int in_file = 0, out_file = 0;
+
+		char file_name[COMMAND_LENGTH] = {'\0'}, cmd_exec[COMMAND_LENGTH] = {'\0'};
+		if(codes[0].second == FORWARD_APPEND || codes[0].second == FORWARD_SINGLE)
+			get_command(separated[1], file_name),
+			get_command(separated[0], cmd_exec);
+		else
+			get_command(separated[1], cmd_exec),
+			get_command(separated[0], file_name);
+
+		cout<<"COMMAND : "<<cmd_exec<<endl
+			<<"FILENAME : "<<file_name;
+
+		int temp; 
+		cin>>temp;
+
+		out_file = open(file_name, flags, permissions);
+			cout<<"COMES TILL HERE";
 		
-		// open the file as output storer
-		int fd = open(file_, fg, S_IRUSR | S_IRGRP | S_IWGRP | S_IWUSR);
-		dup2(fd, codes[0].first); // replace the stdout/er with fd
-		close(fd); // close unused fd
-		status = single_command(cmd);
-		// status = one_statement(prepare_one(cmd), false);
+		dup2(out_file, codes[0].first);
+		close(out_file);
+		// restore the standard input by default
+		dup2(temp_handles[0], 0); close(temp_handles[0]);
+		
+		// closing the out/err accordingly
+		int restorecodes = (codes[0].first == 1)? 2 : 1;
+		dup2(temp_handles[restorecodes], restorecodes); close(temp_handles[restorecodes]);
+			cout<<"COMES TILL HERE";
+		
+		// execute the command with the out/err redirected
+		single_command(cmd_exec);
+
+		// restoring stdin/out/err
+		for(int i = 0; i < 3; i++) dup2(temp_handles[i], i), close(temp_handles[i]);
 	}
 	// add multiple redirection and types later
 	else {

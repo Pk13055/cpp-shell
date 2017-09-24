@@ -253,11 +253,11 @@ int single_command(char cmd[]) {
 				strcat(temp,temp2);
 
 			if(temp[strlen(temp)-1]!=temp[0])
-				{
+			{
 				temp[strlen(temp)]=temp[0];
 				temp[strlen(temp)+1] = '\0';
-				}
-	}
+			}
+		}
 
 		if(strlen(temp)) 
 			tokenized.push_back(temp);
@@ -316,7 +316,6 @@ int single_command(char cmd[]) {
 		
 		}
 	}
-
 	else
 		return one_statement(tokenized,args,false);		
 }
