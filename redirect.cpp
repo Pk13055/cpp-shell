@@ -46,9 +46,10 @@ pair< vector< vector<char*> >, vector< pair<int, int> > >
 	// seperates it into tokens taking care of error codes
 	for(auto i: tokens) {
 		if (strstr((i), "<") || strstr((i), ">")  || strstr((i), "<<")  || strstr((i), ">>")) {
-			if(strcmp((i), "<") == 0 || strcmp((i), ">") == 0  
-				|| strcmp((i), "<<") == 0  || strcmp((i), ">>") == 0)
-				// change part to include both side numbering in later release
+			// change part to include both side numbering in later release
+			if(strcmp(i, "<") == 0 || strcmp(i, "<<") == 0) 
+				codes.push_back(make_pair(0, get_type(i)));
+			else if( strcmp(i, ">") == 0 || strcmp(i, ">>") == 0)
 				codes.push_back(make_pair(1, get_type(i)));
 			else codes.push_back(make_pair(i[0] - 48, get_type(i + 1)));
 			if(cur_arg.size()) {
@@ -85,16 +86,15 @@ bool check_redirection(
 void get_command(vector<char*> separate, char final_command[]) {
 	char command[COMMAND_LENGTH];
 	bool is_first = true;
-	// for(vector<char*>::iterator i = separate.begin(); i != separate.end(); i++) {
 	for(auto i: separate) {
 			if(is_first)
 				strcpy(command, i), is_first = false;
 			else
 				strcat(command, " "), strcat(command, i);
 		}
-	cout<<command<<endl;
 	strcpy(final_command, command);
 }
+
 
 char** prepare_one(char cmd[]) {
 	vector<char*> tokenized;
@@ -111,6 +111,7 @@ char** prepare_one(char cmd[]) {
 		args[tokenized.size()] = NULL;
 	return args;
 }
+
 
 // the main function that handles the redirection
 int handle_redirect(vector<char*> tokens) {
@@ -134,36 +135,33 @@ int handle_redirect(vector<char*> tokens) {
 	// handle only single redirection for now
 	if(codes.size() == 1) {
 		int flags = ((codes[0].second == FORWARD_APPEND || codes[0].second == BACKWARD_APPEND)? 0 : O_TRUNC)
-			| O_APPEND | O_WRONLY | O_CREAT,
-			permissions =  S_IRUSR | S_IRGRP | S_IWGRP | S_IWUSR;
-		int in_file = 0, out_file = 0;
+			| O_APPEND | O_WRONLY | O_CREAT, 
+			permissions = 0;
 
 		char file_name[COMMAND_LENGTH] = {'\0'}, cmd_exec[COMMAND_LENGTH] = {'\0'};
+		get_command(separated[1], file_name), get_command(separated[0], cmd_exec);
 		if(codes[0].second == FORWARD_APPEND || codes[0].second == FORWARD_SINGLE)
-			get_command(separated[1], file_name),
-			get_command(separated[0], cmd_exec);
+			flags = flags | O_WRONLY, permissions = S_IWUSR | S_IWGRP;
 		else
-			get_command(separated[1], cmd_exec),
-			get_command(separated[0], file_name);
+			flags = O_RDONLY, permissions = S_IRUSR | S_IRGRP;
 
 		cout<<"COMMAND : "<<cmd_exec<<endl
-			<<"FILENAME : "<<file_name;
+			<<"FILENAME : "<<file_name<<endl;
 
-		int temp; 
-		cin>>temp;
-
-		out_file = open(file_name, flags, permissions);
-			cout<<"COMES TILL HERE";
+		int out_file = open(file_name, flags, permissions);
 		
 		dup2(out_file, codes[0].first);
 		close(out_file);
-		// restore the standard input by default
-		dup2(temp_handles[0], 0); close(temp_handles[0]);
 		
-		// closing the out/err accordingly
-		int restorecodes = (codes[0].first == 1)? 2 : 1;
-		dup2(temp_handles[restorecodes], restorecodes); close(temp_handles[restorecodes]);
-			cout<<"COMES TILL HERE";
+		// closing the stdetc accordingly
+		int restorecodes;
+		switch(codes[0].first) {
+			case 0: restorecodes = 12; break;
+			case 1: restorecodes = 20; break;
+			case 2: restorecodes = 10; break;
+		}
+		dup2(temp_handles[restorecodes / 10 ], restorecodes / 10); close(temp_handles[restorecodes / 10]);
+		dup2(temp_handles[restorecodes % 10 ], restorecodes % 10); close(temp_handles[restorecodes % 10]);
 		
 		// execute the command with the out/err redirected
 		single_command(cmd_exec);
@@ -172,20 +170,7 @@ int handle_redirect(vector<char*> tokens) {
 		for(int i = 0; i < 3; i++) dup2(temp_handles[i], i), close(temp_handles[i]);
 	}
 	// add multiple redirection and types later
-	else {
+	else
 		cout<<red<<"Multiple redirection feature coming up in next release"<<def<<endl;
-		/*
-		// first tells the stdinouterr, and second the direction
-		auto c = codes.begin();
-
-		for(vector< vector<char*> >::iterator i = separated.begin(), j = separated.begin() + 1
-			; i != separated.end() && j != separated.end(); i++, j++) {
-				vector<char*> cmd1, cmd2;
-			// in this situation execute the first and send to second
-			if(c.second == FORWARD_APPEND || c.second == FORWARD_SINGLE) cmd1 = *i, cmd2 = *j;
-			// in this case execute the second and send to first
-			else cmd1 = *j, cmd2 = *i;
-		}*/
-	}
 	return true;
 }	
