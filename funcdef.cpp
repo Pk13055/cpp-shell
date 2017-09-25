@@ -44,9 +44,7 @@ int find_pid(int p)
 {
 	for(auto x:all_proc)
 		if((x.second).get_priority() == p)
-			return x.first;
-
-	
+			return x.first;	
 	return 0;	
 }
 
@@ -216,6 +214,7 @@ int one_statement(vector<char*> tokenized,char* cmd[], bool is_bg) {
 			if(all_proc.size() > 0)
 			for(auto x : all_proc)
 			{		
+				printf("Hello\n");
 				printf("[%d] %s %s [%d]\n", (x.second).get_priority(),(x.second).get_status(), (x.second).get_name(), x.first);
 			}	
 
@@ -289,6 +288,17 @@ int one_statement(vector<char*> tokenized,char* cmd[], bool is_bg) {
 				return 0;
 			}
 
+			map<int, Process>::iterator it = all_proc.end(); 
+			printf("%s\n", ((*it).second).get_status()	);
+			if(strcmp(((*it).second).get_status(),"Zombie") == 0)
+			{
+				kill((*it).first,SIGCONT);
+
+				printf("Killed process:%s\n",((*it).second).get_name());
+			all_proc.erase((*it).first);
+			}
+	
+
 		}
 
 
@@ -297,24 +307,29 @@ int one_statement(vector<char*> tokenized,char* cmd[], bool is_bg) {
 			if (execvp(cmd[0], cmd) == -1) perror("shkell");
 		}
 
+
 		exit(0);
+
+		
 
 	} 
 	else {
+
 		Process p;
 		p.set_pid(pid);
 		p.set_parent(getpid());
 		p.set_job(CHILD);
 		p.set_name(cmd[0]);
 		p.set_priority(all_proc.size() + 1);
+		p.set_status();
 		all_proc[pid] = p;
 
-
 		if(!is_bg){
-		do 
+			do
 			wpid = waitpid(pid, &status, WUNTRACED);
-		while (!WIFEXITED(status) && !WIFSIGNALED(status));
-		all_proc.erase(pid);		
+			while (!WIFEXITED(status) && !WIFSIGNALED(status));
+			all_proc.erase(pid);		
+	
 		}
 
 		else
@@ -409,21 +424,37 @@ int single_command(char cmd[]) {
 			cout<<red<<" Error 'cd'-ing into dir "<<args[1]<<def<<endl;
 			perror("shkell");
 		
+		return 0;
 		}
 	}
 
+	else if(strcmp(args[0],"overkill") ==0)
+	{
+		for(auto x:all_proc)
+			kill(x.first,SIGTERM);
+	
+		return 0;
+
+	}
 
 	else if(strcmp(args[0], "setenv") == 0)
-		if(tokenized.size() != 3)
+		{if(tokenized.size() != 3)
 			perror("Usage: setenv var [value]");
 		else
 			setenv(args[1],args[2],1);
+
+		return 0;
+
+		}
 
 	else if(strcmp(args[0], "getenv") == 0){
 		if(tokenized.size() != 2)
 			perror("Usage: getenv var ");
 		else
 			if(getenv(args[1]) < 0) perror("Error");
+	
+		return 0;
+
 	}	
 
 	else if(strcmp(args[0], "unsetenv") == 0){
@@ -431,11 +462,15 @@ int single_command(char cmd[]) {
 			perror("Usage: getsetenv var");
 		else
 			if(unsetenv(args[1]) < 0) perror("Error");
+	
+		return 0;
+
 	}
 
 
 	else
 		return one_statement(tokenized,args,false);		
+
 }
 
 // converts multiple commands and runs them one by one

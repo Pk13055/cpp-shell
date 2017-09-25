@@ -20,6 +20,7 @@ using namespace std;
 
 
 extern char home_dir[PWD_LENGTH / 2];
+
 // stores the PS1 details and other stuff
 class BaseDetails {
 	char user_name[USER_NAME_LENGTH];
@@ -37,8 +38,8 @@ public:
 
 // each Process is of this type
 class Process {
-	char name[JOB_NAME];
-	int job_type, status,priority;
+	char name[JOB_NAME],status[10];
+	int job_type,priority;
 	pid_t pid;
 	pid_t parent;
 public:
@@ -48,16 +49,26 @@ public:
 	int 	get_priority() { return priority; }
 	char* 	get_name() 	{ return name; 		}
 	char* 	get_status() { 
-		if(status == 1)
+		if(strcmp(status,"R") == 0)
 			return "Running";
-	
-		else
-			return "Weird Process";
-	}
 
-	void print_p() {
-		cout<<"PID : "<<get_pid()<<"\tPARENT : "<<get_parent()<<endl
-			<<"Job type : "<<job_type<<"\tName : "<<get_name()<<endl;
+		else if(strcmp(status,"S") == 0)
+			return "Sleep";
+		
+		else if(strcmp(status,"Z") == 0)
+			return "Zombie";
+
+		else if(strcmp(status,"T") == 0)
+			return "Stopped";
+
+		else if(strcmp(status,"D") == 0)
+			return "DEAD";
+
+		else if(strcmp(status,"B") == 0)
+			return "Build In";
+
+		else
+			return "Undefined";
 	}
 	
 	void set_pid(pid_t t) 	{ pid = t; 			}
@@ -70,11 +81,43 @@ public:
 			strncpy(name, s, (size_t) JOB_NAME);
 	}
 	void set_priority(int x) {priority = x; }
-	void set_status(int x){ status = x;}
+	
+	void set_status(){ 
+		
+	char stat_file[FILE_NAME]="/proc/";
+	char line[STAT_LENGTH];
+
+	char* buf = (char*)malloc(PID_LENGTH);
+	sprintf(buf,"%d",pid);
+
+	strcat(stat_file,buf);
+	strcat(stat_file,"/stat");
+
+	FILE* inputFile = fopen(stat_file,"r");
+
+	if(inputFile == NULL)
+		{ strcpy(status,"B"); }  	
+
+	else
+	{
+		
+		fgets(line, sizeof(line),inputFile);
+
+		char* stat_param[100];
+		stat_param[0] = strtok(line," ");
+		for(int i=0; i<5 ;i++)
+			stat_param[i+1] = strtok(NULL," ");
+
+		strcpy(status,stat_param[2]);
+	}
+
+	}
 
 };
 
 extern map<pid_t, Process> all_proc; // stores all the processess
+
+int find_pid(int p);
 
 // checks for background and prints to terminal
 void check_bg(); 
