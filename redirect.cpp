@@ -141,12 +141,9 @@ int handle_redirect(vector<char*> tokens) {
 		char file_name[COMMAND_LENGTH] = {'\0'}, cmd_exec[COMMAND_LENGTH] = {'\0'};
 		get_command(separated[1], file_name), get_command(separated[0], cmd_exec);
 		if(codes[0].second == FORWARD_APPEND || codes[0].second == FORWARD_SINGLE)
-			flags = flags | O_WRONLY, permissions = S_IWUSR | S_IWGRP;
+			flags = flags | O_WRONLY, permissions = S_IWUSR | S_IWGRP | S_IRUSR | S_IRGRP;
 		else
-			flags = O_RDONLY, permissions = S_IRUSR | S_IRGRP;
-
-		cout<<"COMMAND : "<<cmd_exec<<endl
-			<<"FILENAME : "<<file_name<<endl;
+			flags = O_RDONLY, permissions = S_IRUSR | S_IRGRP | S_IWUSR | S_IWGRP;
 
 		int out_file = open(file_name, flags, permissions);
 		
