@@ -38,14 +38,22 @@ public:
 // each Process is of this type
 class Process {
 	char name[JOB_NAME];
-	int job_type, status;
+	int job_type, status,priority;
 	pid_t pid;
 	pid_t parent;
 public:
 	pid_t 	get_pid() 	{ return pid; 		}
 	pid_t 	get_parent(){ return parent; 	}
 	int 	get_type() 	{ return job_type; 	}
+	int 	get_priority() { return priority; }
 	char* 	get_name() 	{ return name; 		}
+	char* 	get_status() { 
+		if(status == 1)
+			return "Running";
+	
+		else
+			return "Weird Process";
+	}
 
 	void print_p() {
 		cout<<"PID : "<<get_pid()<<"\tPARENT : "<<get_parent()<<endl
@@ -61,6 +69,9 @@ public:
 		else
 			strncpy(name, s, (size_t) JOB_NAME);
 	}
+	void set_priority(int x) {priority = x; }
+	void set_status(int x){ status = x;}
+
 };
 
 extern map<pid_t, Process> all_proc; // stores all the processess

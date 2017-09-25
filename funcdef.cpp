@@ -5,6 +5,7 @@
 #include <sys/wait.h>
 #include <pwd.h>
 #include <readline/readline.h>
+#include <readline/history.h>
 
 #include "classdef.h"
 #include "colormod.h"
@@ -34,8 +35,19 @@ void check_bg() {
 					cout<<"- ["<<((*i).second).get_parent()<<"] ended"<<endl;
 					all_proc.erase((*i).first);
 				}
+				((*i).second).set_priority(status);
 		}
 	}
+}
+
+int find_pid(int p)
+{
+	for(auto x:all_proc)
+		if((x.second).get_priority() == p)
+			return x.first;
+
+	
+	return 0;	
 }
 
 // stores the pwd aswell as host and username
@@ -148,20 +160,12 @@ char* remove_padding(char cmd[]) {
 int one_statement(vector<char*> tokenized,char* cmd[], bool is_bg) {
 	pid_t pid, wpid;
 	int status;
-	Process p;
 
 	pid = fork();
 	int _pid = random(); 
 
 	if (pid == 0) {
-		p.set_pid(_pid);
-		p.set_parent(getppid());
-		p.set_job(CHILD);
-		p.set_name(cmd[0]);
-
 		/* handling for the single type of command*/
-
-		// cd command block
 
 		// case nightswatch
 		if(strcmp(cmd[0], "nightswatch") == 0) {
@@ -177,7 +181,6 @@ int one_statement(vector<char*> tokenized,char* cmd[], bool is_bg) {
 		// case echo
 		else if(!strcmp(cmd[0], "echo")) echo(tokenized);
 
-		// pinfo custom command
 		
 		else if(!strcmp(cmd[0],"interrupt")){
 			FILE* memfile = fopen("/proc/interrupts","r");
@@ -191,6 +194,7 @@ int one_statement(vector<char*> tokenized,char* cmd[], bool is_bg) {
 		}
 
 
+		// pinfo custom command
 		else if(strcmp(cmd[0], "pinfo") == 0)
 			pinfo(tokenized);
 			
@@ -207,23 +211,115 @@ int one_statement(vector<char*> tokenized,char* cmd[], bool is_bg) {
 					if(i == 16)	{printf("%s",line); break;}
 		}
 
-		else 
-			if (execvp(cmd[0], cmd) == -1) perror("shkell");
+		else if (strcmp(cmd[0],"jobs") == 0)
+		{
+			if(all_proc.size() > 0)
+			for(auto x : all_proc)
+			{		
+				printf("[%d] %s %s [%d]\n", (x.second).get_priority(),(x.second).get_status(), (x.second).get_name(), x.first);
+			}	
 
-			else {
-				all_proc[pid] = p;
-				if(!is_bg) _exit(status);
+
+			else
+				printf("No jobs\n"); 
+		}	
+		
+		else if(strcmp(cmd[0],"kjob") == 0)
+		{
+			if(tokenized.size() != 3)
+			{
+				perror("Usage: kjob [Job number] [signal]");
+				return 0;
 			}
-	
 
-		exit(0);	
+			int job_number = strtol(cmd[1],NULL,10);
+			int signal_number = strtol(cmd[2],NULL,10);
+			if(job_number == 0)
+			{
+				perror("Argument2 not a number");
+				return 0;
+			}
+
+			int process_pid = find_pid(job_number);
+			
+			if(signal_number == 0 )
+			{
+				perror("Argument3 should a number");
+				return 0;
+			}
+
+			kill(process_pid,signal_number);
+
+		}
+
+
+		// else if(strcmp(cmd[0],"fg")==0)
+		// {
+		// 	if(tokenized.size() != 2)
+		// 	{	perror("Usage: fg [job_number]"); return 0;}
+		
+		// 	int job_number = strtol(cmd[1],NULL,10);
+		// 	if(job_number == 0)
+		// 	{
+		// 		perror("Argument2 not a number");
+		// 		return 0;
+		// 	}			
+			// int process_pid = find_pid(job_number);
+
+
+
+		// }
+
+		else if(strcmp(cmd[0],"bg")==0)
+		{
+			if(tokenized.size() != 2)
+			{	perror("Usage: bg [job_number]"); return 0;}
+		
+			int job_number = strtol(cmd[1],NULL,10);
+			if(job_number == 0)
+			{
+				perror("Argument2 not a number");
+				return 0;
+			}			
+
+			int process_pid = find_pid(job_number);
+			if(process_pid == 0)
+			{
+				perror("No process found");
+				return 0;
+			}
+
+		}
+
+
+
+		else {
+			if (execvp(cmd[0], cmd) == -1) perror("shkell");
+		}
+
+		exit(0);
 
 	} 
-	else if(!is_bg) {
+	else {
+		Process p;
+		p.set_pid(pid);
+		p.set_parent(getpid());
+		p.set_job(CHILD);
+		p.set_name(cmd[0]);
+		p.set_priority(all_proc.size() + 1);
+		all_proc[pid] = p;
+
+
+		if(!is_bg){
 		do 
 			wpid = waitpid(pid, &status, WUNTRACED);
 		while (!WIFEXITED(status) && !WIFSIGNALED(status));
-		all_proc.erase(_pid);
+		all_proc.erase(pid);		
+		}
+
+		else
+			cout<<"+ ["<<all_proc[pid].get_priority() <<"] "<<all_proc[pid].get_name()<<endl;
+
 	}
 
 
@@ -293,7 +389,6 @@ int single_command(char cmd[]) {
 		args[tokenized.size()] = NULL;
 
 	if(strcmp(args[tokenized.size() - 1], "&") == 0) {
-		cout<<"+ ["<<all_proc.size() + 1<<"] "<<args[0]<<endl;
 		args[tokenized.size() - 1] = NULL;
 		tokenized.pop_back();
 		one_statement(tokenized,args, true);
@@ -316,6 +411,29 @@ int single_command(char cmd[]) {
 		
 		}
 	}
+
+
+	else if(strcmp(args[0], "setenv") == 0)
+		if(tokenized.size() != 3)
+			perror("Usage: setenv var [value]");
+		else
+			setenv(args[1],args[2],1);
+
+	else if(strcmp(args[0], "getenv") == 0){
+		if(tokenized.size() != 2)
+			perror("Usage: getenv var ");
+		else
+			if(getenv(args[1]) < 0) perror("Error");
+	}	
+
+	else if(strcmp(args[0], "unsetenv") == 0){
+		if(tokenized.size() != 2)
+			perror("Usage: getsetenv var");
+		else
+			if(unsetenv(args[1]) < 0) perror("Error");
+	}
+
+
 	else
 		return one_statement(tokenized,args,false);		
 }
@@ -337,7 +455,10 @@ int exe_cmds(char cmd[]) {
 	pid_t pid, wpid;
 	int status;
 	for(auto cmd: init_args) {
-		if(!strcmp(cmd,"exit") || !strcmp(cmd,"quit")) exit(0); // exit shell on quit
+		if(!strcmp(cmd,"exit") || !strcmp(cmd,"quit")){
+		 write_history("/home/shubh/Assignment/OS/Assignment2/cpp-shell/.shkell_history");
+		 exit(0);
+		 } // exit shell on quit
 
 		return_type = single_command(cmd); 
 	

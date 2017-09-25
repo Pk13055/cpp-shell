@@ -31,3 +31,7 @@
 *.out
 *.app
 shkell
+
+
+# Shell history
+.shkell_history
