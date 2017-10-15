@@ -93,8 +93,6 @@ public:
 	strcat(stat_file,buf);
 	strcat(stat_file,"/stat");
 
-	printf("exe:%s\n",stat_file);
-
 	FILE* inputFile = fopen(stat_file,"r");
 
 	if(inputFile == NULL)
@@ -119,6 +117,8 @@ public:
 
 extern map<pid_t, Process> all_proc; // stores all the processess
 extern map<char*,char*> builtin_cmd;
+
+int find_pid(int p);
 
 int find_pid(int p);
 

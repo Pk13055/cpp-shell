@@ -254,6 +254,61 @@ int one_statement(vector<char*> tokenized,char* cmd[], bool is_bg) {
 
 		}
 
+<<<<<<< HEAD
+=======
+
+		// else if(strcmp(cmd[0],"fg")==0)
+		// {
+		// 	if(tokenized.size() != 2)
+		// 	{	perror("Usage: fg [job_number]"); return 0;}
+		
+		// 	int job_number = strtol(cmd[1],NULL,10);
+		// 	if(job_number == 0)
+		// 	{
+		// 		perror("Argument2 not a number");
+		// 		return 0;
+		// 	}			
+			// int process_pid = find_pid(job_number);
+
+
+
+		// }
+
+		else if(strcmp(cmd[0],"bg")==0)
+		{
+			if(tokenized.size() != 2)
+			{	perror("Usage: bg [job_number]"); return 0;}
+		
+			int job_number = strtol(cmd[1],NULL,10);
+			if(job_number == 0)
+			{
+				perror("Argument2 not a number");
+				return 0;
+			}			
+
+			int process_pid = find_pid(job_number);
+			if(process_pid == 0)
+			{
+				perror("No process found");
+				return 0;
+			}
+
+			map<int, Process>::iterator it = all_proc.end(); 
+			printf("%s\n", ((*it).second).get_status()	);
+			if(strcmp(((*it).second).get_status(),"Zombie") == 0)
+			{
+				kill((*it).first,SIGCONT);
+
+				printf("Killed process:%s\n",((*it).second).get_name());
+			all_proc.erase((*it).first);
+			}
+	
+
+		}
+
+
+
+>>>>>>> 91ec6eb1544794aa27b1c4448f8ed66da5dfe412
 		else {
 			if (execvp(cmd[0], cmd) == -1) perror("shkell");
 		}
@@ -261,7 +316,11 @@ int one_statement(vector<char*> tokenized,char* cmd[], bool is_bg) {
 
 		exit(0);
 
+<<<<<<< HEAD
 
+=======
+		
+>>>>>>> 91ec6eb1544794aa27b1c4448f8ed66da5dfe412
 
 	} 
 	else {
@@ -273,7 +332,10 @@ int one_statement(vector<char*> tokenized,char* cmd[], bool is_bg) {
 		p.set_name(cmd[0]);
 		p.set_priority(all_proc.size() + 1);
 		p.set_status();
+<<<<<<< HEAD
 		p.set_type(is_bg?0:1);
+=======
+>>>>>>> 91ec6eb1544794aa27b1c4448f8ed66da5dfe412
 		all_proc[pid] = p;
 
 		if(!is_bg){
