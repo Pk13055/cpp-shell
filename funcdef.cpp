@@ -1,5 +1,4 @@
 #include <bits/stdc++.h>
-#include <iostream>
 #include <unistd.h>
 #include <stdlib.h>
 #include <sys/wait.h>
@@ -21,6 +20,8 @@ char* getInput() {
 
 // stores the details of all the processes
 map<pid_t, Process> all_proc;
+map<char*,char*> builtin_cmd;
+
 // stores the home dir
 char home_dir[PWD_LENGTH / 2];
 
@@ -30,7 +31,7 @@ void check_bg() {
 		int status;
 		for(map<pid_t, Process>::iterator i = 
 			all_proc.begin(); i != all_proc.end(); i++) {
-				pid_t wpid = waitpid(((*i).first), &status, WUNTRACED);
+				pid_t wpid = waitpid(((*i).first), &status, WNOHANG);
 				if (WIFEXITED(status) || WIFSIGNALED(status)) {
 					cout<<"- ["<<((*i).second).get_parent()<<"] ended"<<endl;
 					all_proc.erase((*i).first);
@@ -44,9 +45,7 @@ int find_pid(int p)
 {
 	for(auto x:all_proc)
 		if((x.second).get_priority() == p)
-			return x.first;
-
-	
+			return x.first;	
 	return 0;	
 }
 
@@ -161,16 +160,19 @@ int one_statement(vector<char*> tokenized,char* cmd[], bool is_bg) {
 	pid_t pid, wpid;
 	int status;
 
+
 	pid = fork();
 	int _pid = random(); 
 
-	if (pid == 0) {
-		/* handling for the single type of command*/
 
+	if (pid == 0) {
+		if(is_bg)
+			setpgid(0,0);	
+		/* handling for the single type of command*/
 		// case nightswatch
 		if(strcmp(cmd[0], "nightswatch") == 0) {
 			strcpy(cmd[0], "watch");
-			strcpy(tokenized[0],"wacth"); 
+			strcpy(tokenized[0],"watch"); 
 			one_statement(tokenized,cmd, false);
 
 		}
@@ -216,7 +218,7 @@ int one_statement(vector<char*> tokenized,char* cmd[], bool is_bg) {
 			if(all_proc.size() > 0)
 			for(auto x : all_proc)
 			{		
-				printf("[%d] %s %s [%d]\n", (x.second).get_priority(),(x.second).get_status(), (x.second).get_name(), x.first);
+				printf("[%d] %s %s %s [%d]\n", (x.second).get_priority(),(x.second).get_status(), (x.second).get_name(),(x.second).get_type()?"FG":"BG", x.first);
 			}	
 
 
@@ -252,69 +254,34 @@ int one_statement(vector<char*> tokenized,char* cmd[], bool is_bg) {
 
 		}
 
-
-		// else if(strcmp(cmd[0],"fg")==0)
-		// {
-		// 	if(tokenized.size() != 2)
-		// 	{	perror("Usage: fg [job_number]"); return 0;}
-		
-		// 	int job_number = strtol(cmd[1],NULL,10);
-		// 	if(job_number == 0)
-		// 	{
-		// 		perror("Argument2 not a number");
-		// 		return 0;
-		// 	}			
-			// int process_pid = find_pid(job_number);
-
-
-
-		// }
-
-		else if(strcmp(cmd[0],"bg")==0)
-		{
-			if(tokenized.size() != 2)
-			{	perror("Usage: bg [job_number]"); return 0;}
-		
-			int job_number = strtol(cmd[1],NULL,10);
-			if(job_number == 0)
-			{
-				perror("Argument2 not a number");
-				return 0;
-			}			
-
-			int process_pid = find_pid(job_number);
-			if(process_pid == 0)
-			{
-				perror("No process found");
-				return 0;
-			}
-
-		}
-
-
-
 		else {
 			if (execvp(cmd[0], cmd) == -1) perror("shkell");
 		}
 
+
 		exit(0);
+
+
 
 	} 
 	else {
+
 		Process p;
 		p.set_pid(pid);
 		p.set_parent(getpid());
 		p.set_job(CHILD);
 		p.set_name(cmd[0]);
 		p.set_priority(all_proc.size() + 1);
+		p.set_status();
+		p.set_type(is_bg?0:1);
 		all_proc[pid] = p;
 
-
 		if(!is_bg){
-		do 
+			do
 			wpid = waitpid(pid, &status, WUNTRACED);
-		while (!WIFEXITED(status) && !WIFSIGNALED(status));
-		all_proc.erase(pid);		
+			while (!WIFEXITED(status) && !WIFSIGNALED(status));
+			all_proc.erase(pid);		
+	
 		}
 
 		else
@@ -409,21 +376,37 @@ int single_command(char cmd[]) {
 			cout<<red<<" Error 'cd'-ing into dir "<<args[1]<<def<<endl;
 			perror("shkell");
 		
+		return 0;
 		}
 	}
 
+	else if(strcmp(args[0],"overkill") ==0)
+	{
+		for(auto x:all_proc)
+			kill(x.first,SIGTERM);
+	
+		return 0;
+
+	}
 
 	else if(strcmp(args[0], "setenv") == 0)
-		if(tokenized.size() != 3)
+		{if(tokenized.size() != 3)
 			perror("Usage: setenv var [value]");
 		else
 			setenv(args[1],args[2],1);
+
+		return 0;
+
+		}
 
 	else if(strcmp(args[0], "getenv") == 0){
 		if(tokenized.size() != 2)
 			perror("Usage: getenv var ");
 		else
 			if(getenv(args[1]) < 0) perror("Error");
+	
+		return 0;
+
 	}	
 
 	else if(strcmp(args[0], "unsetenv") == 0){
@@ -431,11 +414,116 @@ int single_command(char cmd[]) {
 			perror("Usage: getsetenv var");
 		else
 			if(unsetenv(args[1]) < 0) perror("Error");
+	
+		return 0;
+
+	}
+
+	else if(strcmp(args[0],"fg")==0)
+	{
+		if(tokenized.size() != 2)
+			{	perror("Usage: fg [job_number]"); return 0;}
+		
+			int job_number = strtol(args[1],NULL,10);
+			if(job_number == 0)
+			{
+				perror("Argument2 not a number");
+				return 0;
+			}			
+
+			int process_pid = find_pid(job_number);
+			if(process_pid == 0)
+			{
+				perror("No process found");
+				return 0;
+			}
+
+			printf("Process: [%d] is now running in foreground\n",process_pid);
+			 
+			kill(process_pid,SIGCONT);
+			all_proc[process_pid].set_status();
+			all_proc[process_pid].set_type(1);
+			waitpid(process_pid,NULL,WUNTRACED);
+			all_proc.erase(process_pid);
+
+			return 0;
+
 	}
 
 
+	else if(strcmp(args[0],"bg")==0)
+	{
+		if(tokenized.size() != 2)
+		{	perror("Usage: bg [job_number]"); return 0;}
+	
+		int job_number = strtol(args[1],NULL,10);
+		if(job_number == 0)
+		{
+			perror("Argument2 not a number");
+			return 0;
+		}			
+
+		int process_pid = find_pid(job_number);
+		if(process_pid == 0)
+		{
+			perror("No process found");
+			return 0;
+		}
+
+		printf("Process: [%d] is now running in background\n",process_pid);
+		 
+		kill(process_pid,SIGCONT);
+		all_proc[process_pid].set_status();
+	
+		return 0;
+
+	}
+
+
+
+	else if(strcmp(args[0], "alias")==0){
+	
+		if(tokenized.size() ==1)
+			{for(map<char*,char*>::iterator iter = builtin_cmd.begin(); iter != builtin_cmd.end(); iter++)
+				printf("%s=%s\n",(*iter).first,(*iter).second); return 0;}
+
+
+		else if(tokenized.size() > 2)
+			printf("Too many arguments\nUsage: alias a=\"cmd\" taking only the 1st argument\n");
+
+		char* new_cmd;
+		char* old_cmd;
+		new_cmd = (char*)malloc(COMMAND_LENGTH*sizeof(char));
+		old_cmd = (char*)malloc(COMMAND_LENGTH*sizeof(char));
+		
+		new_cmd = strtok(tokenized[1],"=");
+		old_cmd = strtok(NULL,"=");
+		if(old_cmd[0]=='\"')
+			old_cmd = old_cmd + 1;
+
+		if(old_cmd[strlen(old_cmd)-1] !='\"')
+			{ printf("Correct usage: alias a=\"cmd\" \n"); return 0;}
+		else
+			old_cmd[strlen(old_cmd)-1]='\0';
+
+		if(strcmp(new_cmd,old_cmd))
+			{
+			builtin_cmd[new_cmd] = old_cmd;
+			printf("%s => %s\n",new_cmd,builtin_cmd[new_cmd]);
+			}
+
+			return 0;
+	}
+
+
+
+	for(map<char*,char*>::iterator iter = builtin_cmd.begin(); iter != builtin_cmd.end(); iter++)
+		if(!strcmp((*iter).first,args[0]))
+			{return single_command((*iter).second);}
+
 	else
 		return one_statement(tokenized,args,false);		
+
 }
 
 // converts multiple commands and runs them one by one
