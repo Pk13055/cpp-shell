@@ -164,7 +164,6 @@ int one_statement(vector<char*> tokenized,char* cmd[], bool is_bg) {
 	pid = fork();
 	int _pid = random(); 
 
-
 	if (pid == 0) {
 		if(is_bg)
 			setpgid(0,0);	
@@ -254,61 +253,6 @@ int one_statement(vector<char*> tokenized,char* cmd[], bool is_bg) {
 
 		}
 
-<<<<<<< HEAD
-=======
-
-		// else if(strcmp(cmd[0],"fg")==0)
-		// {
-		// 	if(tokenized.size() != 2)
-		// 	{	perror("Usage: fg [job_number]"); return 0;}
-		
-		// 	int job_number = strtol(cmd[1],NULL,10);
-		// 	if(job_number == 0)
-		// 	{
-		// 		perror("Argument2 not a number");
-		// 		return 0;
-		// 	}			
-			// int process_pid = find_pid(job_number);
-
-
-
-		// }
-
-		else if(strcmp(cmd[0],"bg")==0)
-		{
-			if(tokenized.size() != 2)
-			{	perror("Usage: bg [job_number]"); return 0;}
-		
-			int job_number = strtol(cmd[1],NULL,10);
-			if(job_number == 0)
-			{
-				perror("Argument2 not a number");
-				return 0;
-			}			
-
-			int process_pid = find_pid(job_number);
-			if(process_pid == 0)
-			{
-				perror("No process found");
-				return 0;
-			}
-
-			map<int, Process>::iterator it = all_proc.end(); 
-			printf("%s\n", ((*it).second).get_status()	);
-			if(strcmp(((*it).second).get_status(),"Zombie") == 0)
-			{
-				kill((*it).first,SIGCONT);
-
-				printf("Killed process:%s\n",((*it).second).get_name());
-			all_proc.erase((*it).first);
-			}
-	
-
-		}
-
-
-
->>>>>>> 91ec6eb1544794aa27b1c4448f8ed66da5dfe412
 		else {
 			if (execvp(cmd[0], cmd) == -1) perror("shkell");
 		}
@@ -316,11 +260,6 @@ int one_statement(vector<char*> tokenized,char* cmd[], bool is_bg) {
 
 		exit(0);
 
-<<<<<<< HEAD
-
-=======
-		
->>>>>>> 91ec6eb1544794aa27b1c4448f8ed66da5dfe412
 
 	} 
 	else {
@@ -332,10 +271,7 @@ int one_statement(vector<char*> tokenized,char* cmd[], bool is_bg) {
 		p.set_name(cmd[0]);
 		p.set_priority(all_proc.size() + 1);
 		p.set_status();
-<<<<<<< HEAD
 		p.set_type(is_bg?0:1);
-=======
->>>>>>> 91ec6eb1544794aa27b1c4448f8ed66da5dfe412
 		all_proc[pid] = p;
 
 		if(!is_bg){
@@ -437,9 +373,9 @@ int single_command(char cmd[]) {
 		else if((ic = chdir(args[1])) < 0) {
 			cout<<red<<" Error 'cd'-ing into dir "<<args[1]<<def<<endl;
 			perror("shkell");
+		}		
 		
 		return 0;
-		}
 	}
 
 	else if(strcmp(args[0],"overkill") ==0)
@@ -541,8 +477,6 @@ int single_command(char cmd[]) {
 
 	}
 
-
-
 	else if(strcmp(args[0], "alias")==0){
 	
 		if(tokenized.size() ==1)
@@ -551,7 +485,7 @@ int single_command(char cmd[]) {
 
 
 		else if(tokenized.size() > 2)
-			printf("Too many arguments\nUsage: alias a=\"cmd\" taking only the 1st argument\n");
+			printf("Too many arguments\nUsage: alias a=\"cmd\" taking only the 1st argument:%s\n",args[2]);
 
 		char* new_cmd;
 		char* old_cmd;
@@ -583,8 +517,7 @@ int single_command(char cmd[]) {
 		if(!strcmp((*iter).first,args[0]))
 			{return single_command((*iter).second);}
 
-	else
-		return one_statement(tokenized,args,false);		
+	return one_statement(tokenized,args,false);		
 
 }
 
