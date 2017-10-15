@@ -352,13 +352,6 @@ int single_command(char cmd[]) {
 	int ic = 0;
 	for(auto i: tokenized) args[ic++] = i;
 		args[tokenized.size()] = NULL;
-
-	if(strcmp(args[tokenized.size() - 1], "&") == 0) {
-		args[tokenized.size() - 1] = NULL;
-		tokenized.pop_back();
-		one_statement(tokenized,args, true);
-		return BACKGROUND;
-	}
 		
 		// checks for piping and redirection type commands
 
@@ -511,11 +504,47 @@ int single_command(char cmd[]) {
 			return 0;
 	}
 
+	else if(strcmp(args[0], "google") == 0)
+			{
+				char query[100];
+				strcpy(query, "firefox");
+	
+				strcat(query," www.google.co.in/search?q=");
+				
+				for(int i = 1;i<tokenized.size()-1;i++)
+					{
+						if(i>1)
+							strcat(query,"+");
+						strcat(query,tokenized[i]);
+					}
+
+
+				if(strcmp(args[tokenized.size() - 1], "&") == 0)
+					strcat(query," &");
+
+				else if(tokenized.size() >1) {
+					strcat(query,"+");
+					strcat(query,tokenized[tokenized.size() -1]);
+				}
+
+				printf("%s\n",query);	
+				single_command(query);
+				return 0;
+			}
+
 
 
 	for(map<char*,char*>::iterator iter = builtin_cmd.begin(); iter != builtin_cmd.end(); iter++)
 		if(!strcmp((*iter).first,args[0]))
 			{return single_command((*iter).second);}
+
+
+	if(strcmp(args[tokenized.size() - 1], "&") == 0) {
+		args[tokenized.size() - 1] = NULL;
+		tokenized.pop_back();
+		one_statement(tokenized,args, true);
+		return BACKGROUND;
+	}
 
 	return one_statement(tokenized,args,false);		
 
